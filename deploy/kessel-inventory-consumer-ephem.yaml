@@ -13,6 +13,8 @@ objects:
           topics:
           - outbox.event.hbi.hosts
           - host-inventory.hbi.hosts
+          - host-inventory.hbi.hosts_p0
+          - host-inventory.hbi.hosts_p1
           retry-options:
             consumer-max-retries: 3
             operation-max-retries: 4
@@ -36,10 +38,16 @@ objects:
       kafkaTopics:
       - topicName: outbox.event.hbi.hosts
         partitions: ${{PARTITIONS}}
-        replicas: 3
+        replicas: 1
       - topicName: host-inventory.hbi.hosts
         partitions: ${{PARTITIONS}}
-        replicas: 3
+        replicas: 1
+      - topicName: host-inventory.hbi.hosts_p0
+        partitions: ${{PARTITIONS}}
+        replicas: 1
+      - topicName: host-inventory.hbi.hosts_p1
+        partitions: ${{PARTITIONS}}
+        replicas: 1
       optionalDependencies:
         - kessel-inventory
         - kessel-relations
