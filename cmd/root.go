@@ -86,7 +86,7 @@ func init() {
 		panic(err)
 	}
 
-	readyzCmd := readyzCommand(options.Client, loggerOptions)
+	readyzCmd := readyzCommand(options.Client)
 	rootCmd.AddCommand(readyzCmd)
 	err = viper.BindPFlags(readyzCmd.Flags())
 	if err != nil {

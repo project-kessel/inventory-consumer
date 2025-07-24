@@ -6,36 +6,36 @@ import (
 	"time"
 
 	"github.com/authzed/grpcutil"
+	"github.com/go-kratos/kratos/v2/log"
 	kesselv1 "github.com/project-kessel/inventory-api/api/kessel/inventory/v1"
 	kessel "github.com/project-kessel/inventory-consumer/internal/client"
-	"github.com/project-kessel/inventory-consumer/internal/common"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func readyzCommand(clientOptions *kessel.Options, loggerOptions common.LoggerOptions) *cobra.Command {
+func readyzCommand(clientOptions *kessel.Options) *cobra.Command {
 	readyzCmd := &cobra.Command{
 		Use:   "readyz",
 		Short: "Check if the Inventory API service is ready",
 		Long: `Check if the Inventory API service is ready by making a gRPC request
 to the kessel.inventory.v1.KesselInventoryHealthService.GetLivez endpoint.
 The InventoryURL from the client configuration is used as the gRPC endpoint.`,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Initialize logger for potential debugging
-			_, _ = common.InitLogger(common.GetLogLevel(), loggerOptions)
-
 			// Validate client configuration
 			if errs := clientOptions.Complete(); errs != nil {
-				return fmt.Errorf("failed to setup client options: %v", errs)
+				return fmt.Errorf("failed to setup client options")
 			}
 			if errs := clientOptions.Validate(); errs != nil {
-				return fmt.Errorf("client options validation error: %v", errs)
+				return fmt.Errorf("client options validation error")
 			}
 
 			// Check if client is enabled
 			if !clientOptions.Enabled {
-				return fmt.Errorf("inventory client is disabled")
+				log.Info("inventory service is not enabled")
+				return nil
 			}
 
 			// Check if InventoryURL is configured
@@ -63,7 +63,7 @@ The InventoryURL from the client configuration is used as the gRPC endpoint.`,
 			if err != nil {
 				return fmt.Errorf("failed to connect to inventory service: %v", err)
 			}
-			defer conn.Close()
+			defer conn.Close() //nolint:errcheck
 
 			// Create health service client
 			healthClient := kesselv1.NewKesselInventoryHealthServiceClient(conn)
@@ -81,8 +81,8 @@ The InventoryURL from the client configuration is used as the gRPC endpoint.`,
 			code := resp.GetCode()
 			if code < 200 || code >= 300 {
 				return fmt.Errorf("inventory service not healthy, status: %s, code: %d", resp.GetStatus(), resp.GetCode())
-			}
 
+			}
 			// Return success
 			fmt.Printf("Inventory service is ready! Status: %s\n", resp.GetStatus())
 			return nil
