@@ -1,22 +1,26 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"net/http"
-	"strings"
 	"time"
 
+	"github.com/authzed/grpcutil"
+	kesselv1 "github.com/project-kessel/inventory-api/api/kessel/inventory/v1"
 	kessel "github.com/project-kessel/inventory-consumer/internal/client"
 	"github.com/project-kessel/inventory-consumer/internal/common"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func readyzCommand(clientOptions *kessel.Options, loggerOptions common.LoggerOptions) *cobra.Command {
 	readyzCmd := &cobra.Command{
 		Use:   "readyz",
 		Short: "Check if the Inventory API service is ready",
-		Long: `Check if the Inventory API service is ready by making an HTTP request
-to the InventoryURL + /api/inventory/v1/livez endpoint`,
+		Long: `Check if the Inventory API service is ready by making a gRPC request
+to the kessel.inventory.v1.KesselInventoryHealthService.GetLivez endpoint.
+The InventoryURL from the client configuration is used as the gRPC endpoint.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Initialize logger for potential debugging
 			_, _ = common.InitLogger(common.GetLogLevel(), loggerOptions)
@@ -39,48 +43,48 @@ to the InventoryURL + /api/inventory/v1/livez endpoint`,
 				return fmt.Errorf("inventory URL not configured")
 			}
 
-			// Construct the livez URL - convert gRPC URL to HTTP URL
-			// The InventoryURL is typically a gRPC endpoint, but we need HTTP for the livez check
-			inventoryURL := clientOptions.InventoryURL
+			fmt.Printf("Checking inventory service readiness at: %s\n", clientOptions.InventoryURL)
 
-			// Handle common gRPC port to HTTP port conversion
-			// If the URL contains port 9000 (common gRPC port), try 8000 for HTTP
-			if strings.Contains(inventoryURL, ":9000") {
-				inventoryURL = strings.Replace(inventoryURL, ":9000", ":8000", 1)
+			// Set up gRPC connection options
+			var opts []grpc.DialOption
+
+			if clientOptions.Insecure {
+				opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			} else {
+				tlsConfig, _ := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+				opts = append(opts, tlsConfig)
 			}
 
-			// Ensure http:// prefix if not present and insecure is true
-			if !strings.HasPrefix(inventoryURL, "http://") && !strings.HasPrefix(inventoryURL, "https://") {
-				if clientOptions.Insecure {
-					inventoryURL = "http://" + inventoryURL
-				} else {
-					inventoryURL = "https://" + inventoryURL
-				}
+			// Create gRPC connection with timeout
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			conn, err := grpc.NewClient(clientOptions.InventoryURL, opts...)
+			if err != nil {
+				return fmt.Errorf("failed to connect to inventory service: %v", err)
 			}
+			defer conn.Close()
 
-			livezURL := inventoryURL + "/api/inventory/v1/livez"
+			// Create health service client
+			healthClient := kesselv1.NewKesselInventoryHealthServiceClient(conn)
 
-			fmt.Printf("Checking inventory service readiness at: %s\n", livezURL)
-
-			// Create HTTP client with timeout
-			client := &http.Client{
-				Timeout: 10 * time.Second,
-			}
-
-			// Make HTTP GET request to livez endpoint
-			resp, err := client.Get(livezURL)
+			// Make gRPC call to GetLivez
+			req := &kesselv1.GetLivezRequest{}
+			resp, err := healthClient.GetLivez(ctx, req)
 			if err != nil {
 				return fmt.Errorf("failed to check inventory service health: %v", err)
 			}
-			defer resp.Body.Close()
 
 			// Check if the response indicates the service is healthy
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("inventory service not healthy, status: %d", resp.StatusCode)
+			// Typically, a successful gRPC call means the service is ready
+			// For health checks, we expect HTTP-like status codes where 2xx indicates success
+			code := resp.GetCode()
+			if code < 200 || code >= 300 {
+				return fmt.Errorf("inventory service not healthy, status: %s, code: %d", resp.GetStatus(), resp.GetCode())
 			}
 
 			// Return success
-			fmt.Println("Inventory service is ready!")
+			fmt.Printf("Inventory service is ready! Status: %s\n", resp.GetStatus())
 			return nil
 		},
 	}
