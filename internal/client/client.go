@@ -16,14 +16,14 @@ type ClientProvider interface {
 }
 
 type KesselClient struct {
-	*v1beta2.InventoryClient
+	v1beta2.KesselInventoryServiceClient
 	Enabled     bool
 	AuthEnabled bool
 }
 
 func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	logger.Info("Setting up Inventory API client")
-	var client *v1beta2.InventoryClient
+	var client v1beta2.KesselInventoryServiceClient
 	var err error
 
 	if !c.Enabled {
@@ -32,7 +32,7 @@ func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	}
 
 	if c.EnableOidcAuth {
-		client, err = v1beta2.NewInventoryGRPCClientBuilder().
+		client, err = v1beta2.New().
 			WithEndpoint(c.InventoryURL).
 			WithOAuth2(c.ClientId, c.ClientSecret, c.TokenEndpoint).
 			WithInsecure(c.Insecure).

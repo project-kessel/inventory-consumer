@@ -23,6 +23,7 @@ func TransformHostToReportResourceRequest(msg []byte) (*v1beta2.ReportResourceRe
 		"type":                 types.HostResourceType,
 		"reporter_type":        types.HostReporterType,
 		"reporter_instance_id": types.HostReporterInstanceID,
+		"use_new":              true,
 		"representations": map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"local_resource_id": hostMsg.Payload.ID,
