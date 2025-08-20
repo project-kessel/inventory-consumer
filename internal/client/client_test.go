@@ -84,10 +84,10 @@ func TestNew(t *testing.T) {
 
 			if !test.config.Enabled {
 				// For disabled clients, InventoryClient should be nil
-				assert.Nil(t, client.InventoryClient)
+				assert.Nil(t, client.KesselInventoryServiceClient)
 			} else {
 				// For enabled clients, InventoryClient should be set
-				assert.NotNil(t, client.InventoryClient)
+				assert.NotNil(t, client.KesselInventoryServiceClient)
 			}
 		})
 	}
