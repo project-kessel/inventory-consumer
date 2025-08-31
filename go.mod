@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/redhatinsights/app-common-go v1.6.8
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/pflag v1.0.8
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.0
 	go.opentelemetry.io/otel v1.37.0
