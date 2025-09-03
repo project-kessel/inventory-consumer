@@ -48,6 +48,13 @@ objects:
               periodSeconds: 30
               timeoutSeconds: 5
               failureThreshold: 3
+            resources:
+              requests:
+                memory: ${KIC_REQUESTS_MEMORY}
+                cpu: ${KIC_REQUESTS_CPU}
+              limits:
+                memory: ${KIC_LIMITS_MEMORY}
+                cpu: ${KIC_LIMITS_CPU}
           webServices:
             public:
               enabled: false
@@ -79,3 +86,15 @@ parameters:
   - description: Name of Secret that contains the Kafka clusters' CA Cert (if required)
     name: CA_CERT_SECRET
     value: kessel-kafka-connect-config
+  - name: KIC_REQUESTS_MEMORY
+    description: Memory request for Inventory Consumer service
+    value: '512Mi'
+  - name: KIC_REQUESTS_CPU
+    description: CPU request for Inventory Consumer service
+    value: '150m'
+  - name: KIC_LIMITS_MEMORY
+    description: Memory limit for Inventory Consumer service
+    value: '1Gi'
+  - name: KIC_LIMITS_CPU
+    description: CPU limit for Inventory Consumer service
+    value: '300m'
