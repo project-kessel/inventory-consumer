@@ -26,10 +26,10 @@ type HostMessage struct {
 
 type HostPayload struct {
 	ID                    string     `json:"id"`
-	AnsibleHost           string     `json:"ansible_host"`
-	InsightsID            string     `json:"insights_id"`
-	SubscriptionManagerID string     `json:"subscription_manager_id"`
-	SatelliteID           string     `json:"satellite_id"`
+	AnsibleHost           *string    `json:"ansible_host"`
+	InsightsID            *string    `json:"insights_id"`
+	SubscriptionManagerID *string    `json:"subscription_manager_id"`
+	SatelliteID           *string    `json:"satellite_id"`
 	Groups                GroupSlice `json:"groups"`
 }
 
