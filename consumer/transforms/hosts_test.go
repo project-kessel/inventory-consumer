@@ -104,6 +104,21 @@ const (
 	}`
 
 	testTombstoneKeyInvalidJSON = `{invalid`
+
+	testHostMessageWithNullValues = `{
+		"payload": {
+			"id": "` + testHostID1 + `",
+			"satellite_id": null,
+			"subscription_manager_id": null,
+			"insights_id": null,
+			"ansible_host": null,
+			"groups": [
+				{
+					"id": "` + testWorkspaceID1 + `"
+				}
+			]
+		}
+	}`
 )
 
 func TestTransformHostToReportResourceRequest(t *testing.T) {
@@ -137,6 +152,35 @@ func TestTransformHostToReportResourceRequest(t *testing.T) {
 				assert.Equal(t, testSubMgrID1, reporterMap["subscription_manager_id"])
 				assert.Equal(t, testInsightsID1, reporterMap["insights_inventory_id"])
 				assert.Equal(t, testAnsibleHost1, reporterMap["ansible_host"])
+
+				// Check common data
+				commonMap := req.Representations.Common.AsMap()
+				assert.Equal(t, testWorkspaceID1, commonMap["workspace_id"])
+			},
+		},
+		{
+			name:        "host message with null values transforms correctly",
+			message:     []byte(testHostMessageWithNullValues),
+			expectError: false,
+			validate: func(t *testing.T, req *v1beta2.ReportResourceRequest) {
+				assert.Equal(t, types.HostResourceType, req.Type)
+				assert.Equal(t, types.HostReporterType, req.ReporterType)
+				assert.Equal(t, types.HostReporterInstanceID, req.ReporterInstanceId)
+
+				// Check metadata
+				assert.NotNil(t, req.Representations)
+				assert.NotNil(t, req.Representations.Metadata)
+				assert.Equal(t, testHostID1, req.Representations.Metadata.LocalResourceId)
+				assert.Equal(t, types.HostAPIHref, req.Representations.Metadata.ApiHref)
+				assert.Equal(t, types.HostConsoleHref, *req.Representations.Metadata.ConsoleHref)
+				assert.Equal(t, types.HostReporterVersion, *req.Representations.Metadata.ReporterVersion)
+
+				// Check reporter data
+				reporterMap := req.Representations.Reporter.AsMap()
+				assert.Nil(t, reporterMap["satellite_id"])
+				assert.Nil(t, reporterMap["subscription_manager_id"])
+				assert.Nil(t, reporterMap["insights_inventory_id"])
+				assert.Nil(t, reporterMap["ansible_host"])
 
 				// Check common data
 				commonMap := req.Representations.Common.AsMap()
