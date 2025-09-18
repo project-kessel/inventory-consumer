@@ -33,7 +33,7 @@ func TransformHostToReportResourceRequest(msg []byte) (*v1beta2.ReportResourceRe
 			"reporter": map[string]interface{}{
 				"satellite_id":            hostMsg.Payload.SatelliteID,
 				"subscription_manager_id": hostMsg.Payload.SubscriptionManagerID,
-				"insights_inventory_id":   hostMsg.Payload.InsightsID,
+				"insights_id":             hostMsg.Payload.InsightsID,
 				"ansible_host":            hostMsg.Payload.AnsibleHost,
 			},
 			"common": map[string]interface{}{
