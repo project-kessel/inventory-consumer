@@ -150,7 +150,7 @@ func TestTransformHostToReportResourceRequest(t *testing.T) {
 				reporterMap := req.Representations.Reporter.AsMap()
 				assert.Equal(t, testSatelliteID1, reporterMap["satellite_id"])
 				assert.Equal(t, testSubMgrID1, reporterMap["subscription_manager_id"])
-				assert.Equal(t, testInsightsID1, reporterMap["insights_inventory_id"])
+				assert.Equal(t, testInsightsID1, reporterMap["insights_id"])
 				assert.Equal(t, testAnsibleHost1, reporterMap["ansible_host"])
 
 				// Check common data
@@ -179,7 +179,7 @@ func TestTransformHostToReportResourceRequest(t *testing.T) {
 				reporterMap := req.Representations.Reporter.AsMap()
 				assert.Nil(t, reporterMap["satellite_id"])
 				assert.Nil(t, reporterMap["subscription_manager_id"])
-				assert.Nil(t, reporterMap["insights_inventory_id"])
+				assert.Nil(t, reporterMap["insights_id"])
 				assert.Nil(t, reporterMap["ansible_host"])
 
 				// Check common data
