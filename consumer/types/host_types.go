@@ -8,8 +8,8 @@ import (
 const (
 	HostResourceType       = "host"
 	HostReporterType       = "hbi"
-	HostReporterInstanceID = "redhat.com"
-	HostAPIHref            = "https://apiHref.com/"
+	HostReporterInstanceID = "redhat"
+	HostAPIHref            = "https://apihref.com/"
 	HostConsoleHref        = "https://www.console.com/"
 	HostReporterVersion    = "1.0"
 
