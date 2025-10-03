@@ -153,6 +153,28 @@ func TestParseCreateOrUpdateMessage(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(expected.Representations.Reporter.AsMap(), req.Representations.Reporter.AsMap()))
 }
 
+func TestParseCreateOrUpdateMessageWithTransactionId(t *testing.T) {
+	// Test message with transaction_id in the correct nested structure
+	var req v1beta2.ReportResourceRequest
+	err := ParseCreateOrUpdateMessage([]byte(testMessageWithTransactionId), &req)
+	assert.Nil(t, err)
+
+	// Verify basic fields
+	assert.Equal(t, "host", req.Type)
+	assert.Equal(t, "hbi", req.ReporterType)
+	assert.Equal(t, "00000000-0000-0000-0000-000000000000", req.ReporterInstanceId)
+
+	// Verify transaction_id is set as IdempotencyKey
+	assert.NotNil(t, req.Representations)
+	assert.NotNil(t, req.Representations.Metadata)
+	assert.NotNil(t, req.Representations.Metadata.IdempotencyKey)
+
+	// Check that the IdempotencyKey is a TransactionId
+	transactionId, ok := req.Representations.Metadata.IdempotencyKey.(*v1beta2.RepresentationMetadata_TransactionId)
+	assert.True(t, ok)
+	assert.Equal(t, "test-transaction-123", transactionId.TransactionId)
+}
+
 func TestParseDeleteMessage(t *testing.T) {
 	expected := makeDeleteResourceRequest()
 	var req v1beta2.DeleteResourceRequest

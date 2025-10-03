@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/project-kessel/kessel-sdk-go/kessel/errors"
+	"github.com/project-kessel/kessel-sdk-go/kessel/auth"
 	"github.com/project-kessel/kessel-sdk-go/kessel/inventory/v1beta2"
 )
 
@@ -16,14 +16,14 @@ type ClientProvider interface {
 }
 
 type KesselClient struct {
-	*v1beta2.InventoryClient
+	v1beta2.KesselInventoryServiceClient
 	Enabled     bool
 	AuthEnabled bool
 }
 
 func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	logger.Info("Setting up Inventory API client")
-	var client *v1beta2.InventoryClient
+	var client v1beta2.KesselInventoryServiceClient
 	var err error
 
 	if !c.Enabled {
@@ -32,39 +32,40 @@ func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	}
 
 	if c.EnableOidcAuth {
-		client, err = v1beta2.NewInventoryGRPCClientBuilder().
-			WithEndpoint(c.InventoryURL).
-			WithOAuth2(c.ClientId, c.ClientSecret, c.TokenEndpoint).
-			WithInsecure(c.Insecure).
-			WithMaxReceiveMessageSize(8 * 1024 * 1024).
-			WithMaxSendMessageSize(4 * 1024 * 1024).
+		ctx := context.Background()
+		discovered, err := auth.FetchOIDCDiscovery(ctx, c.SSODiscoveryURL, auth.FetchOIDCDiscoveryOptions{})
+
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to discover OIDC endpoints: %w", err)
+		}
+
+		oauthCredentials := auth.NewOAuth2ClientCredentials(c.ClientId, c.ClientSecret, discovered.TokenEndpoint)
+		// TODO: Build can return a grpc.ClientConn for closing the connection
+		// need to investigate where this could be implemented, security/performance, etc
+		client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).
+			OAuth2ClientAuthenticated(&oauthCredentials, nil).
+			Insecure().
 			Build()
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to create gRPC client: %w", err)
+		}
 	} else {
-		client, err = v1beta2.NewInventoryGRPCClientBuilder().
-			WithEndpoint(c.InventoryURL).
-			WithInsecure(c.Insecure).
-			WithMaxReceiveMessageSize(8 * 1024 * 1024).
-			WithMaxSendMessageSize(4 * 1024 * 1024).
+		client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).
+			Insecure().
 			Build()
-	}
-	if err != nil {
-		if errors.IsConnectionError(err) {
-			return &KesselClient{}, fmt.Errorf("failed to establish connection: %w", err)
-		} else if errors.IsTokenError(err) {
-			return &KesselClient{}, fmt.Errorf("oauth2 token configuration failed: %w", err)
-		} else {
-			return &KesselClient{}, fmt.Errorf("failed to create Inventory API gRPC client: %w", err)
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to create gRPC client: %w", err)
 		}
 	}
 	return &KesselClient{
-		InventoryClient: client,
-		Enabled:         c.Enabled,
-		AuthEnabled:     c.EnableOidcAuth,
+		KesselInventoryServiceClient: client,
+		Enabled:                      c.Enabled,
+		AuthEnabled:                  c.EnableOidcAuth,
 	}, nil
 }
 
 func (k *KesselClient) CreateOrUpdateResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error) {
-	resp, err := k.ReportResource(context.Background(), request)
+	resp, err := k.KesselInventoryServiceClient.ReportResource(context.Background(), request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to report resource: %w", err)
 	}

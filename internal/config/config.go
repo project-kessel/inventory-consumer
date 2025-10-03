@@ -45,7 +45,7 @@ func LogConfigurationInfo(options *OptionsConfig) {
 		log.Debugf("Client Configuration: URL: %s, Insecure?: %t, Token Endpoint?: %s",
 			options.Client.InventoryURL,
 			options.Client.Insecure,
-			options.Client.TokenEndpoint,
+			options.Client.SSODiscoveryURL,
 		)
 	}
 }

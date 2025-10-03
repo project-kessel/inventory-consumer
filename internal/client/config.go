@@ -54,7 +54,7 @@ func (c *Config) Complete() (CompletedConfig, []error) {
 	tokenReq := &tokenClientConfig{
 		clientId:       c.ClientId,
 		clientSecret:   c.ClientSecret,
-		url:            c.TokenEndpoint,
+		url:            c.SSODiscoveryURL,
 		enableOIDCAuth: c.EnableOidcAuth,
 		insecure:       c.Insecure,
 	}
