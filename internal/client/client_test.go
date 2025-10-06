@@ -15,7 +15,7 @@ import (
 func createTestConfig(enabled bool, enableOidcAuth bool) CompletedConfig {
 	options := &Options{
 		Enabled:        enabled,
-		InventoryURL:   "localhost:9090",
+		InventoryURL:   "localhost:9000",
 		Insecure:       true,
 		EnableOidcAuth: enableOidcAuth,
 		ClientId:       "test-client",
@@ -83,11 +83,11 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, test.expectAuth, client.AuthEnabled)
 
 			if !test.config.Enabled {
-				// For disabled clients, InventoryClient should be nil
-				assert.Nil(t, client.InventoryClient)
+				// For disabled clients, KesselInventoryServiceClient should be nil
+				assert.Nil(t, client.KesselInventoryServiceClient)
 			} else {
-				// For enabled clients, InventoryClient should be set
-				assert.NotNil(t, client.InventoryClient)
+				// For enabled clients, KesselInventoryServiceClient should be set
+				assert.NotNil(t, client.KesselInventoryServiceClient)
 			}
 		})
 	}
