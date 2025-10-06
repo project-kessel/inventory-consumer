@@ -143,12 +143,17 @@ func extractTransactionId(payload interface{}) (string, error) {
 		return "", nil
 	}
 
-	if representations, ok := payloadMap["representations"].(map[string]interface{}); ok {
-		if metadata, ok := representations["metadata"].(map[string]interface{}); ok {
-			if transactionId, ok := metadata["transaction_id"].(string); ok {
-				return transactionId, nil
-			}
-		}
+	representations, ok := payloadMap["representations"].(map[string]interface{})
+	if !ok {
+		return "", nil
 	}
-	return "", nil
+	metadata, ok := representations["metadata"].(map[string]interface{})
+	if !ok {
+		return "", nil
+	}
+	transactionId, ok := metadata["transaction_id"].(string)
+	if !ok {
+		return "", nil
+	}
+	return transactionId, nil
 }
