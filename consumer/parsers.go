@@ -8,6 +8,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/mitchellh/mapstructure"
+	"github.com/project-kessel/kessel-sdk-go/kessel/inventory/v1beta2"
 )
 
 // defines all required headers for message processing
@@ -68,6 +69,13 @@ func ParseCreateOrUpdateMessage(msg []byte, output interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error unmarshaling request payload: %w", err)
 	}
+
+	// Extract transaction_id from the message payload and set it as IdempotencyKey
+	err = setTransactionIdAsIdempotencyKey(msgPayload.RequestPayload, output)
+	if err != nil {
+		return fmt.Errorf("error setting transaction_id as idempotency key: %w", err)
+	}
+
 	return nil
 }
 
@@ -91,4 +99,61 @@ func ParseDeleteMessage(msg []byte, output interface{}) error {
 		return fmt.Errorf("error unmarshaling tuple payload: %w", err)
 	}
 	return nil
+}
+
+// setTransactionIdAsIdempotencyKey extracts transaction_id from the message payload and sets it as the IdempotencyKey
+// in the ReportResourceRequest's Representations Metadata if the output is a ReportResourceRequest
+func setTransactionIdAsIdempotencyKey(payload interface{}, output interface{}) error {
+	// Check if the output is a ReportResourceRequest
+	req, ok := output.(*v1beta2.ReportResourceRequest)
+	if !ok {
+		return nil
+	}
+
+	// Extract transaction_id using helper function
+	transactionIdStr, err := extractTransactionId(payload)
+	if err != nil {
+		return err
+	}
+	if transactionIdStr == "" {
+		return nil
+	}
+
+	// Ensure Representations and Metadata exist
+	if req.Representations == nil {
+		req.Representations = &v1beta2.ResourceRepresentations{}
+	}
+	if req.Representations.Metadata == nil {
+		req.Representations.Metadata = &v1beta2.RepresentationMetadata{}
+	}
+
+	// Set the transaction_id as the IdempotencyKey
+	req.Representations.Metadata.IdempotencyKey = &v1beta2.RepresentationMetadata_TransactionId{
+		TransactionId: transactionIdStr,
+	}
+
+	return nil
+}
+
+// extractTransactionId navigates the nested payload structure to find transaction_id
+func extractTransactionId(payload interface{}) (string, error) {
+	// Navigate through payload.representations.metadata.transaction_id
+	payloadMap, ok := payload.(map[string]interface{})
+	if !ok {
+		return "", nil
+	}
+
+	representations, ok := payloadMap["representations"].(map[string]interface{})
+	if !ok {
+		return "", nil
+	}
+	metadata, ok := representations["metadata"].(map[string]interface{})
+	if !ok {
+		return "", nil
+	}
+	transactionId, ok := metadata["transaction_id"].(string)
+	if !ok {
+		return "", nil
+	}
+	return transactionId, nil
 }
