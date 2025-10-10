@@ -2,25 +2,34 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
 	"time"
 
-	"github.com/authzed/grpcutil"
 	"github.com/go-kratos/kratos/v2/log"
-	kesselv1 "github.com/project-kessel/inventory-api/api/kessel/inventory/v1"
 	kessel "github.com/project-kessel/inventory-consumer/internal/client"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+)
+
+const (
+	InventoryLiveZHTTPEndpoint = "/api/inventory/v1/livez"
+	InventoryHTTPPort          = 8000
+	InventoryHTTPTLSPort       = 8800
 )
 
 func readyzCommand(clientOptions *kessel.Options) *cobra.Command {
 	readyzCmd := &cobra.Command{
 		Use:   "readyz",
 		Short: "Check if the Inventory API service is ready",
-		Long: `Check if the Inventory API service is ready by making a gRPC request
-to the kessel.inventory.v1.KesselInventoryHealthService.GetLivez endpoint.
-The InventoryURL from the client configuration is used as the gRPC endpoint.`,
+		Long: `Check if the Inventory API service is ready by making an HTTP request
+to the /api/inventory/v1/livez endpoint.
+The InventoryURL from the client configuration is used as the HTTP endpoint.
+TLS configuration is applied based on the client options (insecure flag and CA cert file).`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,54 +47,76 @@ The InventoryURL from the client configuration is used as the gRPC endpoint.`,
 				return nil
 			}
 
-			// Check if InventoryURL is configured
-			if clientOptions.InventoryURL == "" {
-				return fmt.Errorf("inventory URL not configured")
+			host, _, err := net.SplitHostPort(clientOptions.InventoryURL)
+			if err != nil {
+				return fmt.Errorf("failed to parse inventory URL: %w", err)
 			}
 
+			var inventoryURL string
 			fmt.Printf("Checking inventory service readiness at: %s\n", clientOptions.InventoryURL)
 
-			// Set up gRPC connection options
-			var opts []grpc.DialOption
-
 			if clientOptions.Insecure {
-				opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+				inventoryURL = fmt.Sprintf("%s:%d%s", host, InventoryHTTPPort, InventoryLiveZHTTPEndpoint)
 			} else {
-				tlsConfig, _ := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
-				opts = append(opts, tlsConfig)
+				inventoryURL = fmt.Sprintf("%s:%d%s", host, InventoryHTTPTLSPort, InventoryLiveZHTTPEndpoint)
 			}
 
-			// Create gRPC connection with timeout
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+			// Create HTTP client with appropriate TLS configuration
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+			}
 
-			conn, err := grpc.NewClient(clientOptions.InventoryURL, opts...)
+			if !clientOptions.Insecure {
+				// Configure TLS with CA certificate
+				tlsConfig := &tls.Config{}
+
+				if clientOptions.CACertFile != "" {
+					// Load CA certificate
+					caCert, err := os.ReadFile(clientOptions.CACertFile)
+					if err != nil {
+						return fmt.Errorf("failed to read CA certificate file %s: %w", clientOptions.CACertFile, err)
+					}
+
+					caCertPool := x509.NewCertPool()
+					if !caCertPool.AppendCertsFromPEM(caCert) {
+						return fmt.Errorf("failed to parse CA certificate from %s", clientOptions.CACertFile)
+					}
+
+					tlsConfig.RootCAs = caCertPool
+				}
+
+				// Create transport with TLS configuration
+				transport := &http.Transport{
+					TLSClientConfig: tlsConfig,
+				}
+				httpClient.Transport = transport
+			}
+
+			// Make HTTP request
+			req, err := http.NewRequestWithContext(context.Background(), "GET", inventoryURL, nil)
 			if err != nil {
-				return fmt.Errorf("failed to connect to inventory service: %v", err)
+				return fmt.Errorf("failed to create HTTP request: %w", err)
 			}
-			defer conn.Close() //nolint:errcheck
 
-			// Create health service client
-			healthClient := kesselv1.NewKesselInventoryHealthServiceClient(conn)
-
-			// Make gRPC call to GetLivez
-			req := &kesselv1.GetLivezRequest{}
-			resp, err := healthClient.GetLivez(ctx, req)
+			resp, err := httpClient.Do(req)
 			if err != nil {
-				return fmt.Errorf("failed to check inventory service health: %v", err)
+				return fmt.Errorf("failed to make HTTP request to %s: %w", inventoryURL, err)
+			}
+			defer resp.Body.Close()
+
+			// Read response body
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("failed to read response body: %w", err)
 			}
 
-			// Check if the response indicates the service is healthy
-			// Typically, a successful gRPC call means the service is ready
-			// For health checks, we expect HTTP-like status codes where 2xx indicates success
-			code := resp.GetCode()
-			if code < 200 || code >= 300 {
-				return fmt.Errorf("inventory service not healthy, status: %s, code: %d", resp.GetStatus(), resp.GetCode())
-
+			// Check response status
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				fmt.Printf("Inventory service is ready! Status: %d, Response: %s\n", resp.StatusCode, string(body))
+				return nil
+			} else {
+				return fmt.Errorf("inventory service not ready. Status: %d, Response: %s", resp.StatusCode, string(body))
 			}
-			// Return success
-			fmt.Printf("Inventory service is ready! Status: %s\n", resp.GetStatus())
-			return nil
 		},
 	}
 
