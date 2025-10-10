@@ -52,7 +52,7 @@ subscribed to the provided topic`,
 			}
 			client, err = kessel.New(clientConfig, log.NewHelper(log.With(logger, "subsystem", "client")))
 			if err != nil {
-				return fmt.Errorf("failed to instantiate client: %v", errs)
+				return fmt.Errorf("failed to instantiate client: %v", err)
 			}
 
 			quit := make(chan os.Signal, 1)
