@@ -21,11 +21,11 @@ objects:
             enabled: false
         client:
           enabled: true
-          client-id: $INVENTORY_CONSUMER_CLIENT_ID
-          client-secret: $INVENTORY_CONSUMER_CLIENT_SECRET
+          client-id: ${INVENTORY_CONSUMER_CLIENT_ID}
+          client-secret: ${INVENTORY_CONSUMER_CLIENT_SECRET}
           ca-cert-file: "/ca-certs/service-ca.crt"
-          sso-token-endpoint: $SSO_TOKEN_ENDPOINT
-          url: $KESSEL_GRPC_FQDN
+          sso-token-endpoint: ${SSO_TOKEN_ENDPOINT}
+          url: ${KESSEL_GRPC_FQDN}
           enable-oidc-auth: true
           insecure-client: false
         log:
