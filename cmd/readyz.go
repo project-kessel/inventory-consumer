@@ -56,9 +56,9 @@ TLS configuration is applied based on the client options (insecure flag and CA c
 			fmt.Printf("Checking inventory service readiness at: %s\n", clientOptions.InventoryURL)
 
 			if clientOptions.Insecure {
-				inventoryURL = fmt.Sprintf("%s:%d%s", host, InventoryHTTPPort, InventoryLiveZHTTPEndpoint)
+				inventoryURL = fmt.Sprintf("http://%s:%d%s", host, InventoryHTTPPort, InventoryLiveZHTTPEndpoint)
 			} else {
-				inventoryURL = fmt.Sprintf("%s:%d%s", host, InventoryHTTPTLSPort, InventoryLiveZHTTPEndpoint)
+				inventoryURL = fmt.Sprintf("https://%s:%d%s", host, InventoryHTTPTLSPort, InventoryLiveZHTTPEndpoint)
 			}
 
 			// Create HTTP client with appropriate TLS configuration
@@ -69,19 +69,15 @@ TLS configuration is applied based on the client options (insecure flag and CA c
 			if !clientOptions.Insecure {
 				// Configure TLS with CA certificate
 				tlsConfig := &tls.Config{}
-
 				if clientOptions.CACertFile != "" {
-					// Load CA certificate
 					caCert, err := os.ReadFile(clientOptions.CACertFile)
 					if err != nil {
 						return fmt.Errorf("failed to read CA certificate file %s: %w", clientOptions.CACertFile, err)
 					}
-
 					caCertPool := x509.NewCertPool()
 					if !caCertPool.AppendCertsFromPEM(caCert) {
 						return fmt.Errorf("failed to parse CA certificate from %s", clientOptions.CACertFile)
 					}
-
 					tlsConfig.RootCAs = caCertPool
 				}
 
@@ -92,7 +88,6 @@ TLS configuration is applied based on the client options (insecure flag and CA c
 				httpClient.Transport = transport
 			}
 
-			// Make HTTP request
 			req, err := http.NewRequestWithContext(context.Background(), "GET", inventoryURL, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create HTTP request: %w", err)
@@ -102,15 +97,13 @@ TLS configuration is applied based on the client options (insecure flag and CA c
 			if err != nil {
 				return fmt.Errorf("failed to make HTTP request to %s: %w", inventoryURL, err)
 			}
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
-			// Read response body
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return fmt.Errorf("failed to read response body: %w", err)
 			}
 
-			// Check response status
 			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				fmt.Printf("Inventory service is ready! Status: %d, Response: %s\n", resp.StatusCode, string(body))
 				return nil
@@ -120,7 +113,6 @@ TLS configuration is applied based on the client options (insecure flag and CA c
 		},
 	}
 
-	// Add client flags to the readyz command
 	clientOptions.AddFlags(readyzCmd.Flags(), "client")
 
 	return readyzCmd

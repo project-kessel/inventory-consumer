@@ -53,11 +53,18 @@ func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	} else {
 		if c.Insecure {
 			client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).Insecure().Build()
+			if err != nil {
+				return &KesselClient{}, fmt.Errorf("failed to create inventory client: %w", err)
+			}
 		} else {
-			client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).Build()
-		}
-		if err != nil {
-			return &KesselClient{}, fmt.Errorf("failed to create gRPC client: %w", err)
+			channelCreds, err := configureTLS(c.CACertFile)
+			if err != nil {
+				return &KesselClient{}, fmt.Errorf("failed to setup transport credentials for TLS: %w", err)
+			}
+			client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).Unauthenticated(channelCreds).Build()
+			if err != nil {
+				return &KesselClient{}, fmt.Errorf("failed to create inventory client: %w", err)
+			}
 		}
 	}
 	return &KesselClient{
