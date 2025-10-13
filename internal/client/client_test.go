@@ -1,23 +1,34 @@
 package kessel
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
+	"fmt"
+	"math/big"
 	"testing"
+	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/project-kessel/inventory-consumer/internal/common"
 	"github.com/project-kessel/inventory-consumer/internal/mocks"
+	"github.com/project-kessel/kessel-sdk-go/kessel/auth"
+	kesselgrpc "github.com/project-kessel/kessel-sdk-go/kessel/grpc"
 	"github.com/project-kessel/kessel-sdk-go/kessel/inventory/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func createTestConfig(enabled bool, enableOidcAuth bool) CompletedConfig {
+func createTestConfig(enabled bool, enableOidcAuth bool, caCertFile string) CompletedConfig {
 	options := &Options{
 		Enabled:        enabled,
 		InventoryURL:   "localhost:9000",
 		Insecure:       true,
 		EnableOidcAuth: enableOidcAuth,
+		CACertFile:     caCertFile,
 		ClientId:       "test-client",
 		ClientSecret:   "test-secret",
 		TokenEndpoint:  "http://localhost:8080/token",
@@ -35,34 +46,120 @@ func createTestLogger() *log.Helper {
 	return log.NewHelper(log.With(logger, "service", "test"))
 }
 
+// createTestCACertData creates CA certificate data in memory for testing
+func createTestCACertData(t *testing.T) []byte {
+	// Create a self-signed CA certificate
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization:  []string{"Test CA"},
+			Country:       []string{"US"},
+			Province:      []string{""},
+			Locality:      []string{"Test City"},
+			StreetAddress: []string{""},
+			PostalCode:    []string{""},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	// Generate private key
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate CA private key: %v", err)
+	}
+
+	// Create the certificate
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		t.Fatalf("Failed to create CA certificate: %v", err)
+	}
+
+	// Encode certificate to PEM format in memory
+	pemData := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caBytes})
+	return pemData
+}
+
+// newWithCACertData is a test helper that creates a client with in-memory CA cert data
+func newWithCACertData(c CompletedConfig, logger *log.Helper, caCertData []byte) (*KesselClient, error) {
+	logger.Info("Setting up Inventory API client")
+	var client v1beta2.KesselInventoryServiceClient
+	var err error
+
+	if !c.Enabled {
+		logger.Info("ClientProvider enabled: ", c.Enabled)
+		return &KesselClient{Enabled: false}, nil
+	}
+
+	if c.EnableOidcAuth {
+		oauthCredentials := auth.NewOAuth2ClientCredentials(c.ClientId, c.ClientSecret, c.TokenEndpoint)
+		// Use the in-memory certificate data instead of reading from file
+		channelCreds, err := configureTLSFromData(caCertData)
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to setup transport credentials for TLS: %w", err)
+		}
+		client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).
+			Authenticated(kesselgrpc.OAuth2CallCredentials(&oauthCredentials), channelCreds).Build()
+
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to create gRPC client: %w", err)
+		}
+	} else {
+		if c.Insecure {
+			client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).Insecure().Build()
+		} else {
+			client, _, err = v1beta2.NewClientBuilder(c.InventoryURL).Build()
+		}
+		if err != nil {
+			return &KesselClient{}, fmt.Errorf("failed to create gRPC client: %w", err)
+		}
+	}
+	return &KesselClient{
+		KesselInventoryServiceClient: client,
+		Enabled:                      c.Enabled,
+		AuthEnabled:                  c.EnableOidcAuth,
+	}, nil
+}
+
 func TestNew(t *testing.T) {
+	// Create CA cert data in memory for tests that need it
+	caCertData := createTestCACertData(t)
+
 	tests := []struct {
 		name          string
 		config        CompletedConfig
 		expectEnabled bool
 		expectAuth    bool
 		shouldError   bool
+		useInMemory   bool // Whether to use in-memory cert data
 	}{
 		{
 			name:          "disabled client returns disabled KesselClient",
-			config:        createTestConfig(false, false),
+			config:        createTestConfig(false, false, ""),
 			expectEnabled: false,
 			expectAuth:    false,
 			shouldError:   false,
+			useInMemory:   false,
 		},
 		{
 			name:          "enabled client without auth creates client successfully",
-			config:        createTestConfig(true, false),
+			config:        createTestConfig(true, false, ""),
 			expectEnabled: true,
 			expectAuth:    false,
 			shouldError:   false,
+			useInMemory:   false,
 		},
 		{
 			name:          "enabled client with auth creates client successfully",
-			config:        createTestConfig(true, true),
+			config:        createTestConfig(true, true, ""),
 			expectEnabled: true,
 			expectAuth:    true,
 			shouldError:   false,
+			useInMemory:   true,
 		},
 	}
 
@@ -70,7 +167,16 @@ func TestNew(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := createTestLogger()
 
-			client, err := New(test.config, logger)
+			var client *KesselClient
+			var err error
+
+			if test.useInMemory {
+				// Use the test helper with in-memory certificate data
+				client, err = newWithCACertData(test.config, logger, caCertData)
+			} else {
+				// Use the regular New function
+				client, err = New(test.config, logger)
+			}
 
 			if test.shouldError {
 				assert.Error(t, err)
@@ -91,6 +197,22 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigureTLSFromData(t *testing.T) {
+	// Create test CA certificate data
+	caCertData := createTestCACertData(t)
+
+	// Test that configureTLSFromData works with valid certificate data
+	creds, err := configureTLSFromData(caCertData)
+	assert.NoError(t, err)
+	assert.NotNil(t, creds)
+
+	// Test that configureTLSFromData fails with invalid certificate data
+	invalidData := []byte("invalid certificate data")
+	creds, err = configureTLSFromData(invalidData)
+	assert.Error(t, err)
+	assert.Nil(t, creds)
 }
 
 func TestKesselClient_IsEnabled(t *testing.T) {

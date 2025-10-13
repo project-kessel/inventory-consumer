@@ -21,9 +21,13 @@ objects:
             enabled: false
         client:
           enabled: true
-          url: "kessel-inventory-api:9000"
-          enable-oidc-auth: false
-          insecure-client: true
+          client-id: ${INVENTORY_CONSUMER_CLIENT_ID}
+          client-secret: ${INVENTORY_CONSUMER_CLIENT_SECRET}
+          ca-cert-file: "/ca-certs/service-ca.crt"
+          sso-token-endpoint: ${SSO_TOKEN_ENDPOINT}
+          url: ${KESSEL_GRPC_FQDN}
+          enable-oidc-auth: true
+          insecure-client: false
         log:
           level: "info"
 
@@ -59,10 +63,15 @@ objects:
             volumeMounts:
                 - name: config-volume
                   mountPath: "/inventory"
+                - name: ca-certs
+                  mountPath: "/ca-certs"
             volumes:
               - name: config-volume
                 configMap:
                   name: kic-config
+              - name: ca-certs
+                configMap:
+                  name: openshift-service-ca.crt
             readinessProbe:
               exec:
                 command: ["inventory-consumer", "readyz"]
@@ -110,3 +119,14 @@ parameters:
   - name: KIC_LIMITS_CPU
     description: CPU limit for Inventory Consumer service
     value: '300m'
+  - name: INVENTORY_CONSUMER_CLIENT_ID
+    description: Inventory Consumer service account client id for auth
+  - name: INVENTORY_CONSUMER_CLIENT_SECRET
+    description: Inventory Consumer service account client secret for auth
+    required: true
+  - name: SSO_TOKEN_ENDPOINT
+    description: Token endpoint URL for SSO to fetch tokens for client authentication
+    required: true
+  - name: KESSEL_GRPC_FQDN
+    description: "FQDN of the Kessel API Kubernetes Service for TLS (example: 'kessel-inventory-api.NAMESPACE.svc:9000')"
+    required: true

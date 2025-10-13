@@ -13,6 +13,6 @@ client:
   enabled: true
   url: "localhost:9000"
   enable-oidc-auth: false
-  insecure: true
+  insecure-client: true
 log:
   level: "info"

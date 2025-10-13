@@ -16,7 +16,7 @@ func TestNewOptions(t *testing.T) {
 		options: NewOptions(),
 		expectedOptions: &Options{
 			Enabled:        true,
-			Insecure:       true,
+			Insecure:       false,
 			EnableOidcAuth: false,
 		},
 	}
@@ -67,6 +67,22 @@ func TestOptions_Validate(t *testing.T) {
 				InventoryURL: "",
 			},
 			expectError: false,
+		},
+		{
+			name: "enable oidc auth is enabled and insecure is disabled",
+			options: &Options{
+				Insecure:       false,
+				EnableOidcAuth: true,
+			},
+			expectError: false,
+		},
+		{
+			name: "enable oidc auth is enabled and insecure is enabled",
+			options: &Options{
+				Insecure:       true,
+				EnableOidcAuth: true,
+			},
+			expectError: true,
 		},
 	}
 
