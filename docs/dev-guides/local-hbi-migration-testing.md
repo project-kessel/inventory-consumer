@@ -44,20 +44,21 @@ If you're testing HBI with Debezium using the above ephemeral process, you can a
 
 To trigger the snapshot:
 
-1. Capture the bootstrap servers
+1. Spin up the Kessel Debug container
 
-```bash
-BOOTSTRAP_SERVERS=$(oc get secret kessel-inventory-consumer -o json | jq -r '.data."cdappconfig.json"' | base64 -d | jq -r '.kafka.brokers[] | "\(.hostname):\(.port)"')
+```shell
+oc process --local \
+    -f https://raw.githubusercontent.com/project-kessel/inventory-api/refs/heads/main/tools/kessel-debug-container/kessel-debug-deploy.yaml \
+    -p ENV="env-$(oc project)" | oc apply -f -
+
+# rsh to the debug container
+oc rsh kessel-debug
+
+# Setup Kafka env vars
+source /usr/local/bin/env-setup.sh
 ```
 
-2. Spin up and access a container with `kcat` installed
-
-```bash
-# Note: working on adding this to kessel-debug as to not spin up a personal image -- upstream image violates SCC's in OpenShift
-oc run kcat --rm -i --tty --image quay.io/anatale/kcat:fedora --env BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS"  -- bash
-```
-
-3. Trigger the snapshot by producing an event to the snapshot table
+2. Trigger the snapshot by producing an event to the snapshot table
 
 ```bash
 # For a blocking snapshot
