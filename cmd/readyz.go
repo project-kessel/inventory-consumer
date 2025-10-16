@@ -19,7 +19,7 @@ import (
 const (
 	InventoryLiveZHTTPEndpoint = "/api/inventory/v1/livez"
 	InventoryHTTPPort          = 8000
-	InventoryHTTPTLSPort       = 8800
+	InventoryHTTPTLSPort       = 8000
 )
 
 func readyzCommand(clientOptions *kessel.Options) *cobra.Command {
