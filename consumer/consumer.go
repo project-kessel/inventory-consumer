@@ -248,7 +248,11 @@ func (i *InventoryConsumer) Consume() error {
 						continue
 					}
 				}
-				metricscollector.Incr(i.MetricsCollector.MsgsProcessed, headers.Operation, nil)
+				metricscollector.Incr(i.MetricsCollector.MsgsProcessed, headers.Operation, nil,
+					attribute.KeyValue{
+						Key:   "topic",
+						Value: attribute.StringValue(*e.TopicPartition.Topic),
+					})
 				i.Logger.Infof("consumed event from topic %s, partition %d at offset %s",
 					*e.TopicPartition.Topic, e.TopicPartition.Partition, e.TopicPartition.Offset)
 				i.Logger.Debugf("consumed event data: key = %-10s value = %s", string(e.Key), string(e.Value))
