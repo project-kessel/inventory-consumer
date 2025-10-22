@@ -13,6 +13,7 @@ type Options struct {
 	BootstrapServers   []string       `mapstructure:"bootstrap-servers"`
 	ConsumerGroupID    string         `mapstructure:"consumer-group-id"`
 	Topics             []string       `mapstructure:"topics"`
+	CommitModulo       int            `mapstructure:"commit-modulo"`
 	SessionTimeout     string         `mapstructure:"session-timeout"`
 	HeartbeatInterval  string         `mapstructure:"heartbeat-interval"`
 	MaxPollInterval    string         `mapstructure:"max-poll-interval"`
@@ -28,6 +29,7 @@ func NewOptions() *Options {
 	return &Options{
 		Enabled:            true,
 		ConsumerGroupID:    "kic",
+		CommitModulo:       10,
 		SessionTimeout:     "45000",
 		HeartbeatInterval:  "3000",
 		MaxPollInterval:    "300000",
@@ -48,6 +50,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet, prefix string) {
 	fs.StringSliceVar(&o.BootstrapServers, prefix+"bootstrap-servers", o.BootstrapServers, "sets the bootstrap server address and port for Kafka")
 	fs.StringVar(&o.ConsumerGroupID, prefix+"consumer-group-id", o.ConsumerGroupID, "sets the Kafka consumer group name (default: inventory-consumer)")
 	fs.StringArrayVar(&o.Topics, prefix+"topics", o.Topics, "Kafka topic to monitor for events")
+	fs.IntVar(&o.CommitModulo, prefix+"commit-modulo", o.CommitModulo, "defines the modulo used to calculate when to commit offsets (default: 10")
 	fs.StringVar(&o.SessionTimeout, prefix+"session-timeout", o.SessionTimeout, "time a consumer can live without sending heartbeat (default: 45000ms)")
 	fs.StringVar(&o.HeartbeatInterval, prefix+"heartbeat-interval", o.HeartbeatInterval, "interval between heartbeats sent to Kafka (default: 3000ms, must be lower then session-timeout)")
 	fs.StringVar(&o.MaxPollInterval, prefix+"max-poll-interval", o.MaxPollInterval, "length of time consumer can go without polling before considered dead (default: 300000ms)")
@@ -69,6 +72,9 @@ func (o *Options) Validate() []error {
 
 	if len(o.Topics) == 0 && o.Enabled {
 		errs = append(errs, fmt.Errorf("topic value can not be empty"))
+	}
+	if o.CommitModulo <= 0 {
+		errs = append(errs, fmt.Errorf("commit modulo must be a positive, non-zero integer value"))
 	}
 	return errs
 }
