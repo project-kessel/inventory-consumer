@@ -25,9 +25,6 @@ import (
 )
 
 const (
-	// commitModulo is used to define the batch size of offsets based on the current offset being processed
-	commitModulo = 10
-
 	/*
 		TODO: Discussion started with SDK development team to see about adding some custom types for API Operations.
 		This way we can reference those types instead of using strings long term. Since it would need to be coordinated
@@ -237,7 +234,7 @@ func (i *InventoryConsumer) Consume() error {
 				// store the current offset to be later batch committed
 				i.offsetMutex.Lock()
 				i.OffsetStorage = append(i.OffsetStorage, e.TopicPartition)
-				shouldCommit := CheckIfCommit(e.TopicPartition)
+				shouldCommit := CheckIfCommit(e.TopicPartition, i.Config.CommitModulo)
 				i.offsetMutex.Unlock()
 
 				if shouldCommit {
@@ -422,8 +419,8 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 }
 
 // CheckIfCommit returns true whenever the condition to commit a batch of offsets is met
-func CheckIfCommit(partition kafka.TopicPartition) bool {
-	return partition.Offset%commitModulo == 0
+func CheckIfCommit(partition kafka.TopicPartition, commitModulo int) bool {
+	return int(partition.Offset)%commitModulo == 0
 }
 
 // FormatOffsets converts a slice of partitions with offset data into a more readable shorthand-coded string to capture what partitions and offsets were committed
