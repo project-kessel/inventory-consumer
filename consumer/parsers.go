@@ -39,10 +39,12 @@ func ParseHeaders(msg *kafka.Message) (EventHeaders, error) {
 	}
 	// validate all header values are set and have valid values -- return all errors if multiple are found
 	if _, ok := validOperations[headers.Operation]; !ok {
-		errs = append(errs, fmt.Errorf("required header 'operation' is missing or invalid: operation='%s'", headers.Operation))
+		err = fmt.Errorf("%w: required header 'operation' is missing or invalid: operation='%s'", ErrValidation, headers.Operation)
+		errs = append(errs, err)
 	}
 	if _, ok := validApiVersions[headers.Version]; !ok {
-		errs = append(errs, fmt.Errorf("required header 'version' is missing or invalid: version='%s'", headers.Version))
+		err = fmt.Errorf("%w: required header 'version' is missing or invalid: version='%s'", ErrValidation, headers.Version)
+		errs = append(errs, err)
 	}
 	if errs != nil {
 		return EventHeaders{}, errors.Join(errs...)
