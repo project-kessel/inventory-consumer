@@ -166,7 +166,7 @@ func TestInventoryConsumer_Retry(t *testing.T) {
 			errs := tester.TestSetup()
 			assert.Nil(t, errs)
 
-			result, err := tester.inv.Retry(test.funcToExecute)
+			result, err := tester.inv.Retry(test.funcToExecute, "", "")
 			assert.Equal(t, test.expectedResult, result)
 			assert.Equal(t, test.expectedErr, err)
 		})
@@ -191,6 +191,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMessageKey),
 				Value: []byte(testCreateOrUpdateMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -205,6 +208,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMessageKey),
 				Value: []byte(testCreateOrUpdateMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -219,6 +225,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMessageKey),
 				Value: []byte(testDeleteMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -233,6 +242,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(testDeleteMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -257,6 +269,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMessageKey),
 				Value: []byte(testDeleteMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: false,
 			setupMock:     func(client *mocks.MockClient) {},
@@ -269,6 +284,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(testMigrationMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -283,6 +301,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(""), // Empty value indicates tombstone/deletion
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -297,6 +318,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(""),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -312,6 +336,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(testMigrationMessage),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
@@ -328,6 +355,9 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			msg: &kafka.Message{
 				Key:   []byte(testMigrationKey),
 				Value: []byte(""),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {

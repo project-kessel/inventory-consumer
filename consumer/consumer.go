@@ -219,10 +219,7 @@ func (i *InventoryConsumer) Consume() error {
 				if err != nil {
 					if errors.Is(err, ErrValidation) {
 						metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseHeaders", fmt.Errorf("missing headers"),
-							attribute.KeyValue{
-								Key:   "topic",
-								Value: attribute.StringValue(*e.TopicPartition.Topic),
-							})
+							metricscollector.AddExtraLabel("topic", *e.TopicPartition.Topic))
 					} else {
 						metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseHeaders", nil)
 					}
@@ -255,10 +252,7 @@ func (i *InventoryConsumer) Consume() error {
 					}
 				}
 				metricscollector.Incr(i.MetricsCollector.MsgsProcessed, headers.Operation, nil,
-					attribute.KeyValue{
-						Key:   "topic",
-						Value: attribute.StringValue(*e.TopicPartition.Topic),
-					})
+					metricscollector.AddExtraLabel("topic", *e.TopicPartition.Topic))
 				i.Logger.Infof("consumed event from topic %s, partition %d at offset %s",
 					*e.TopicPartition.Topic, e.TopicPartition.Partition, e.TopicPartition.Offset)
 				i.Logger.Debugf("consumed event data: key = %-10s value = %s", string(e.Key), string(e.Value))
@@ -335,7 +329,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
 					return i.Client.DeleteResource(deleteReq)
-				}, deleteErrorHandler)
+				}, "", "", deleteErrorHandler)
 			} else {
 				// Transform and process report resource request
 				reportReq, err := transforms.TransformHostToReportResourceRequest(msg.Value)
@@ -347,7 +341,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
 					return i.Client.CreateOrUpdateResource(reportReq)
-				})
+				}, "", "")
 			}
 
 			if operationErr != nil {
@@ -374,13 +368,10 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 		if i.Client.IsEnabled() {
 			resp, err := i.Retry(func() (interface{}, error) {
 				return i.Client.CreateOrUpdateResource(&req)
-			})
+			}, *msg.TopicPartition.Topic, "CreateResource")
 			if err != nil {
 				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "CreateResource", err,
-					attribute.KeyValue{
-						Key:   "topic",
-						Value: attribute.StringValue(*msg.TopicPartition.Topic),
-					})
+					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))
 				i.Logger.Errorf("failed to create resource: %v", err)
 				return err
 			}
@@ -413,13 +404,10 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 			resp, err := i.Retry(func() (interface{}, error) {
 				return i.Client.DeleteResource(&req)
-			}, deleteErrorHandler)
+			}, *msg.TopicPartition.Topic, "CreateResource", deleteErrorHandler)
 			if err != nil {
 				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "DeleteResource", err,
-					attribute.KeyValue{
-						Key:   "topic",
-						Value: attribute.StringValue(*msg.TopicPartition.Topic),
-					})
+					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))
 				i.Logger.Errorf("failed to create resource: %v", err)
 				return err
 			}
@@ -519,7 +507,7 @@ func (i *InventoryConsumer) Shutdown() error {
 
 // Retry executes the given function and will retry on failure with backoff until max retries is reached
 // If errorHandler returns true, the retry loop is short-circuited and the original error is returned
-func (i *InventoryConsumer) Retry(operation func() (interface{}, error), errorHandler ...func(error) bool) (interface{}, error) {
+func (i *InventoryConsumer) Retry(operation func() (interface{}, error), topic string, suboperation string, errorHandler ...func(error) bool) (interface{}, error) {
 	attempts := 0
 	var resp interface{}
 	var err error
@@ -531,8 +519,16 @@ func (i *InventoryConsumer) Retry(operation func() (interface{}, error), errorHa
 			if len(errorHandler) > 0 && errorHandler[0](err) {
 				return nil, nil // Return nil error to drop the message
 			}
-
-			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", nil)
+			// topic and suboperation are provided when we need to ensure metrics are traceable to a service provider
+			// We should either set both or neither, setting the labels to empty values just adds extra metrics entries and noise
+			// TODO: something enforcing this would be good to have
+			if topic != "" && suboperation != "" {
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", nil,
+					metricscollector.AddExtraLabel("topic", topic),
+					metricscollector.AddExtraLabel("suboperation", suboperation))
+			} else {
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", nil)
+			}
 			i.Logger.Errorf("request failed: %v", err)
 			attempts++
 			if i.RetryOptions.OperationMaxRetries == -1 || attempts < i.RetryOptions.OperationMaxRetries {
