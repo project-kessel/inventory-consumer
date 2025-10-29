@@ -44,16 +44,9 @@ podman run --network kessel -d quay.io/YOUR-IMAGE-HERE:TAG start --consumer.boot
 
 1. In the root of your cloned Inventory API repo: `make inventory-up-relations-ready`
 
-2. In the root of your cloned Relations API reo:
-    * Pull down an official schema that will support the consumer:
+2. In the root of your cloned Relations API reo: `make relations-api-up`
 
-    ```shell
-    curl -o deploy/schema.zed https://raw.githubusercontent.com/RedHatInsights/rbac-config/refs/heads/master/configs/stage/schemas/schema.zed
-    ```
-    * Start Relations API: `make relations-api-up`
-
-Then:
-
+3. Spin up the Kessel Inventory Consumer components
 ```shell
 # Deploy KIC and related dependencies
 # This will include a test HBI database for now, Kafka Connect cluster and topic creation
@@ -62,7 +55,7 @@ make inventory-consumer-up
 
 This will allow you to test Kessel Inventory Consumer by producing messages to any created topics that the consumer is configured to monitor (see [config file](./development/configs/full-setup.yaml)).
 
-See the [Development Docs](./development/docs) for info on specific service provider testing use cases.
+See the [Development Docs](./docs/dev-guides/) for info on specific service provider testing use cases.
 
 #### Using Ephemeral
 
