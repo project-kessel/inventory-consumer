@@ -519,6 +519,13 @@ func (i *InventoryConsumer) Retry(operation func() (interface{}, error), errorHa
 			i.Logger.Errorf("request failed: %v", err)
 			attempts++
 			if i.RetryOptions.OperationMaxRetries == -1 || attempts < i.RetryOptions.OperationMaxRetries {
+				// In the situation where we never return due to infinite retries, we won't commit previously processed offsets
+				// This ensures we do -- on failure it does not error out in case the retry is due to recoverable issues
+				i.Logger.Info("commiting any stored offsets before retrying...")
+				err := i.CommitStoredOffsets()
+				if err != nil {
+					i.Logger.Warnf("failed to commit offsets before retry: %v", err)
+				}
 				backoff := min(time.Duration(i.RetryOptions.BackoffFactor*attempts*300)*time.Millisecond, time.Duration(i.RetryOptions.MaxBackoffSeconds)*time.Second)
 				i.Logger.Errorf("retrying in %v", backoff)
 				time.Sleep(backoff)
