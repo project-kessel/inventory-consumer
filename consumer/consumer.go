@@ -49,6 +49,7 @@ var (
 	validApiVersions = map[string]bool{"v1beta2": true}
 	ErrClosed        = errors.New("consumer closed")
 	ErrMaxRetries    = errors.New("max retries reached")
+	ErrValidation    = errors.New("validation error")
 )
 
 type Consumer interface {
@@ -189,7 +190,7 @@ func (i *InventoryConsumer) Run(options *Options, config CompletedConfig, client
 func (i *InventoryConsumer) Consume() error {
 	err := i.Consumer.SubscribeTopics(i.Config.Topics, i.RebalanceCallback)
 	if err != nil {
-		metricscollector.Incr(i.MetricsCollector.ConsumerErrors, "SubscribeTopics", err)
+		metricscollector.Incr(i.MetricsCollector.ConsumerErrors, "SubscribeTopics", nil)
 		i.Logger.Errorf("failed to subscribe to topic: %v", err)
 		return err
 	}
@@ -216,7 +217,12 @@ func (i *InventoryConsumer) Consume() error {
 			case *kafka.Message:
 				headers, err := ParseHeaders(e)
 				if err != nil {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseHeaders", fmt.Errorf("missing headers"))
+					if errors.Is(err, ErrValidation) {
+						metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseHeaders", fmt.Errorf("missing headers"),
+							metricscollector.AddExtraLabel("topic", *e.TopicPartition.Topic))
+					} else {
+						metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseHeaders", nil)
+					}
 					i.Logger.Errorf("failed to parse message headers: %v", err)
 					run = false
 					continue
@@ -240,16 +246,13 @@ func (i *InventoryConsumer) Consume() error {
 				if shouldCommit {
 					err := i.CommitStoredOffsets()
 					if err != nil {
-						metricscollector.Incr(i.MetricsCollector.ConsumerErrors, "CommitStoredOffsets", err)
+						metricscollector.Incr(i.MetricsCollector.ConsumerErrors, "CommitStoredOffsets", nil)
 						i.Logger.Errorf("failed to commit offsets: %v", err)
 						continue
 					}
 				}
 				metricscollector.Incr(i.MetricsCollector.MsgsProcessed, headers.Operation, nil,
-					attribute.KeyValue{
-						Key:   "topic",
-						Value: attribute.StringValue(*e.TopicPartition.Topic),
-					})
+					metricscollector.AddExtraLabel("topic", *e.TopicPartition.Topic))
 				i.Logger.Infof("consumed event from topic %s, partition %d at offset %s",
 					*e.TopicPartition.Topic, e.TopicPartition.Partition, e.TopicPartition.Offset)
 				i.Logger.Debugf("consumed event data: key = %-10s value = %s", string(e.Key), string(e.Value))
@@ -269,7 +272,7 @@ func (i *InventoryConsumer) Consume() error {
 				var stats metricscollector.StatsData
 				err = json.Unmarshal([]byte(e.String()), &stats)
 				if err != nil {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "StatsCollection", err)
+					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "StatsCollection", nil)
 					i.Logger.Errorf("error unmarshalling stats: %v", err)
 					continue
 				}
@@ -301,7 +304,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 			// Migration error handler for "resource not found" errors
 			deleteErrorHandler := func(err error) bool {
 				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "MigrationResourceNotFound", err)
+					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "MigrationResourceNotFound", nil)
 					i.Logger.Warnf("resource not found during migration delete, dropping message: %v", err)
 					return true // Short-circuit retry loop
 				}
@@ -319,30 +322,30 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 				// Transform and process delete request
 				deleteReq, err := transforms.TransformHostToDeleteResourceRequest(msg.Value, msg.Key)
 				if err != nil {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToDeleteResourceRequest", err)
+					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToDeleteResourceRequest", nil)
 					i.Logger.Errorf("failed to parse message for host deletion: %v", err)
 					return err
 				}
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
 					return i.Client.DeleteResource(deleteReq)
-				}, deleteErrorHandler)
+				}, "", "", deleteErrorHandler)
 			} else {
 				// Transform and process report resource request
 				reportReq, err := transforms.TransformHostToReportResourceRequest(msg.Value)
 				if err != nil {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToReportResourceRequest", err)
+					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToReportResourceRequest", nil)
 					i.Logger.Errorf("failed to parse message for host: %v", err)
 					return err
 				}
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
 					return i.Client.CreateOrUpdateResource(reportReq)
-				})
+				}, "", "")
 			}
 
 			if operationErr != nil {
-				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ProcessMigrationResource", operationErr)
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ProcessMigrationResource", nil)
 				i.Logger.Errorf("failed to process migration resource: %v", operationErr)
 				return operationErr
 			}
@@ -357,7 +360,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 		var req v1beta2.ReportResourceRequest
 		err := ParseCreateOrUpdateMessage(msg.Value, &req)
 		if err != nil {
-			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseCreateOrUpdateMessage", err)
+			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseCreateOrUpdateMessage", nil)
 			i.Logger.Errorf("failed to parse message for tuple: %v", err)
 			return err
 		}
@@ -365,9 +368,10 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 		if i.Client.IsEnabled() {
 			resp, err := i.Retry(func() (interface{}, error) {
 				return i.Client.CreateOrUpdateResource(&req)
-			})
+			}, *msg.TopicPartition.Topic, "CreateResource")
 			if err != nil {
-				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "CreateResource", err)
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "CreateResource", err,
+					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))
 				i.Logger.Errorf("failed to create resource: %v", err)
 				return err
 			}
@@ -382,7 +386,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 		var req v1beta2.DeleteResourceRequest
 		err := ParseDeleteMessage(msg.Value, &req)
 		if err != nil {
-			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseDeleteMessage", err)
+			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ParseDeleteMessage", nil)
 			i.Logger.Errorf("failed to parse message for filter: %v", err)
 			return err
 		}
@@ -391,7 +395,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 			// Error handler for "resource not found" errors
 			deleteErrorHandler := func(err error) bool {
 				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
-					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "InventoryResourceNotFound", err)
+					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "InventoryResourceNotFound", nil)
 					i.Logger.Warnf("inventory resource not found, dropping message: %v", err)
 					return true // Short-circuit retry loop
 				}
@@ -400,9 +404,10 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 			resp, err := i.Retry(func() (interface{}, error) {
 				return i.Client.DeleteResource(&req)
-			}, deleteErrorHandler)
+			}, *msg.TopicPartition.Topic, "CreateResource", deleteErrorHandler)
 			if err != nil {
-				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "CreateResource", err)
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "DeleteResource", err,
+					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))
 				i.Logger.Errorf("failed to create resource: %v", err)
 				return err
 			}
@@ -502,7 +507,7 @@ func (i *InventoryConsumer) Shutdown() error {
 
 // Retry executes the given function and will retry on failure with backoff until max retries is reached
 // If errorHandler returns true, the retry loop is short-circuited and the original error is returned
-func (i *InventoryConsumer) Retry(operation func() (interface{}, error), errorHandler ...func(error) bool) (interface{}, error) {
+func (i *InventoryConsumer) Retry(operation func() (interface{}, error), topic string, suboperation string, errorHandler ...func(error) bool) (interface{}, error) {
 	attempts := 0
 	var resp interface{}
 	var err error
@@ -514,8 +519,16 @@ func (i *InventoryConsumer) Retry(operation func() (interface{}, error), errorHa
 			if len(errorHandler) > 0 && errorHandler[0](err) {
 				return nil, nil // Return nil error to drop the message
 			}
-
-			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", err)
+			// topic and suboperation are provided when we need to ensure metrics are traceable to a service provider
+			// We should either set both or neither, setting the labels to empty values just adds extra metrics entries and noise
+			// TODO: something enforcing this would be good to have
+			if topic != "" && suboperation != "" {
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", nil,
+					metricscollector.AddExtraLabel("topic", topic),
+					metricscollector.AddExtraLabel("suboperation", suboperation))
+			} else {
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "Retry", nil)
+			}
 			i.Logger.Errorf("request failed: %v", err)
 			attempts++
 			if i.RetryOptions.OperationMaxRetries == -1 || attempts < i.RetryOptions.OperationMaxRetries {

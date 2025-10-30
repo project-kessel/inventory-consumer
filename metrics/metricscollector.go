@@ -239,3 +239,10 @@ func Incr(counter metric.Int64Counter, operation string, errReason error, extraA
 	attrs = append(attrs, extraAttrs...)
 	counter.Add(ctx, 1, metric.WithAttributes(attrs...))
 }
+
+func AddExtraLabel(labelKey, labelValue string) attribute.KeyValue {
+	return attribute.KeyValue{
+		Key:   attribute.Key(labelKey),
+		Value: attribute.StringValue(labelValue),
+	}
+}
