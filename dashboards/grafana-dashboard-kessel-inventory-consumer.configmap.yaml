@@ -883,8 +883,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 5,
+            "h": 6,
+            "w": 4,
             "x": 0,
             "y": 30
           },
@@ -949,9 +949,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 5,
-            "x": 5,
+            "h": 6,
+            "w": 4,
+            "x": 4,
             "y": 30
           },
           "id": 23,
@@ -988,6 +988,82 @@ data:
             }
           ],
           "title": "HBI Processed Events",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "(in $range)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 175
+                  },
+                  {
+                    "color": "red",
+                    "value": 250
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 8,
+            "y": 30
+          },
+          "id": 25,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum(increase(inventory_outbox_save_successes_total[$__range])) - sum(increase(consumer_msgs_processed_total{job='kessel-inventory-consumer-service', topic='outbox.event.hbi.hosts'}[$__range]))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "E2E Lag (Messages)",
           "type": "stat"
         },
         {
@@ -1053,9 +1129,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 14,
-            "x": 10,
+            "h": 6,
+            "w": 6,
+            "x": 12,
             "y": 30
           },
           "id": 24,
@@ -1087,7 +1163,101 @@ data:
               "refId": "A"
             }
           ],
-          "title": "End to end replication lag",
+          "title": "E2E Replication Lag Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 18,
+            "y": 30
+          },
+          "id": 26,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(consumer_msg_process_failures_total{job=\"kessel-inventory-consumer-service\", topic=\"outbox.event.hbi.hosts\"}[$__rate_interval])) / sum(rate(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\", topic=\"outbox.event.hbi.hosts\"}[$__rate_interval])) or sum(up{job=\"kessel-inventory-consumer-service\"}) * 0",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Consumer Error Rate (HBI Outbox)",
           "type": "timeseries"
         }
       ],
@@ -1137,7 +1307,7 @@ data:
       "timezone": "UTC",
       "title": "Kessel Inventory Consumer",
       "uid": "bew68vw3315a8c",
-      "version": 2
+      "version": 3
     }
 kind: ConfigMap
 metadata:
