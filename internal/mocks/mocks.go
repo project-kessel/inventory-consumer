@@ -44,7 +44,7 @@ func (m *MockConsumer) AssignmentLost() bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockClient) CreateOrUpdateResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error) {
+func (m *MockClient) ReportResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error) {
 	args := m.Called(request)
 	return args.Get(0).(*v1beta2.ReportResourceResponse), args.Error(1)
 }
