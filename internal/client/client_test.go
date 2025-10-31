@@ -245,7 +245,7 @@ func TestKesselClient_IsEnabled(t *testing.T) {
 	}
 }
 
-// TestClientProvider_CreateOrUpdateResource tests the CreateOrUpdateResource method using MockClient
+// TestClientProvider_CreateOrUpdateResource tests the ReportResource method using MockClient
 func TestClientProvider_CreateOrUpdateResource(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -257,7 +257,7 @@ func TestClientProvider_CreateOrUpdateResource(t *testing.T) {
 		{
 			name: "successful create or update resource",
 			mockSetup: func(m *mocks.MockClient) {
-				m.On("CreateOrUpdateResource", mock.Anything).
+				m.On("ReportResource", mock.Anything).
 					Return(&v1beta2.ReportResourceResponse{}, nil)
 			},
 			request: &v1beta2.ReportResourceRequest{
@@ -271,7 +271,7 @@ func TestClientProvider_CreateOrUpdateResource(t *testing.T) {
 		{
 			name: "create or update resource fails",
 			mockSetup: func(m *mocks.MockClient) {
-				m.On("CreateOrUpdateResource", mock.Anything).
+				m.On("ReportResource", mock.Anything).
 					Return(&v1beta2.ReportResourceResponse{}, errors.New("grpc error"))
 			},
 			request: &v1beta2.ReportResourceRequest{
@@ -286,7 +286,7 @@ func TestClientProvider_CreateOrUpdateResource(t *testing.T) {
 			name: "create or update resource with specific request data",
 			mockSetup: func(m *mocks.MockClient) {
 				// Use mock.Anything for simpler matching
-				m.On("CreateOrUpdateResource", mock.Anything).
+				m.On("ReportResource", mock.Anything).
 					Return(&v1beta2.ReportResourceResponse{}, nil)
 			},
 			request: &v1beta2.ReportResourceRequest{
@@ -309,7 +309,7 @@ func TestClientProvider_CreateOrUpdateResource(t *testing.T) {
 			var client ClientProvider = mockClient
 
 			// Call the method being tested
-			result, err := client.CreateOrUpdateResource(test.request)
+			result, err := client.ReportResource(test.request)
 
 			// Assert expectations
 			if test.expectedError != nil {

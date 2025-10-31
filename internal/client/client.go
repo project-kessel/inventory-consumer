@@ -15,7 +15,7 @@ import (
 )
 
 type ClientProvider interface {
-	CreateOrUpdateResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error)
+	ReportResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error)
 	DeleteResource(request *v1beta2.DeleteResourceRequest) (*v1beta2.DeleteResourceResponse, error)
 	IsEnabled() bool
 }
@@ -74,8 +74,8 @@ func New(c CompletedConfig, logger *log.Helper) (*KesselClient, error) {
 	}, nil
 }
 
-func (k *KesselClient) CreateOrUpdateResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error) {
-	resp, err := k.ReportResource(context.Background(), request)
+func (k *KesselClient) ReportResource(request *v1beta2.ReportResourceRequest) (*v1beta2.ReportResourceResponse, error) {
+	resp, err := k.KesselInventoryServiceClient.ReportResource(context.Background(), request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to report resource: %w", err)
 	}

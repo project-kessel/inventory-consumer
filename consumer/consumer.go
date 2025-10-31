@@ -340,7 +340,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 				}
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
-					return i.Client.CreateOrUpdateResource(reportReq)
+					return i.Client.ReportResource(reportReq)
 				}, "", "")
 			}
 
@@ -367,10 +367,10 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 		if i.Client.IsEnabled() {
 			resp, err := i.Retry(func() (interface{}, error) {
-				return i.Client.CreateOrUpdateResource(&req)
-			}, *msg.TopicPartition.Topic, "CreateResource")
+				return i.Client.ReportResource(&req)
+			}, *msg.TopicPartition.Topic, "ReportResource")
 			if err != nil {
-				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "CreateResource", err,
+				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "ReportResource", err,
 					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))
 				i.Logger.Errorf("failed to create resource: %v", err)
 				return err
@@ -404,7 +404,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 			resp, err := i.Retry(func() (interface{}, error) {
 				return i.Client.DeleteResource(&req)
-			}, *msg.TopicPartition.Topic, "CreateResource", deleteErrorHandler)
+			}, *msg.TopicPartition.Topic, "DeleteResource", deleteErrorHandler)
 			if err != nil {
 				metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "DeleteResource", err,
 					metricscollector.AddExtraLabel("topic", *msg.TopicPartition.Topic))

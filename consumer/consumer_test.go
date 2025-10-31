@@ -291,7 +291,7 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
-				client.On("CreateOrUpdateResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
+				client.On("ReportResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
 			},
 			expectError: false,
 		},
@@ -308,7 +308,7 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
-				client.On("CreateOrUpdateResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
+				client.On("ReportResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
 			},
 			expectError: false,
 		},
@@ -384,7 +384,7 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			},
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
-				client.On("CreateOrUpdateResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
+				client.On("ReportResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil)
 			},
 			expectError: false,
 		},
@@ -437,8 +437,8 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 			clientEnabled: true,
 			setupMock: func(client *mocks.MockClient) {
 				// Fail first attempt, succeed on second
-				client.On("CreateOrUpdateResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, errors.New("temporary error")).Once()
-				client.On("CreateOrUpdateResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil).Once()
+				client.On("ReportResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, errors.New("temporary error")).Once()
+				client.On("ReportResource", mock.Anything).Return(&v1beta2.ReportResourceResponse{}, nil).Once()
 			},
 			expectError: false,
 		},
