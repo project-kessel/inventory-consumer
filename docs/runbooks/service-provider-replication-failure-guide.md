@@ -5,6 +5,25 @@ Kessel consumer processing failures during replication are generally related to 
 Related Alerts:
 - `<ServiceName>KesselConsumerProcessingFailures`
 
+## Missing/Invalid Header Issues
+
+
+**Example Error in Kessel Inventory Consumer Logs**
+
+```
+msg=validation error: required header 'operation' is missing or invalid: operation=<VALUE>
+  OR
+msg=validation error: required header 'version' is missing or invalid: version=<VALUE>
+```
+
+Every record written to your outbox table must include a value in the `operation` and `version` columns:
+* `operation`: this value correlates to the API operation being performed and will be either `ReportResource` or `DeleteResource`
+* `version`: this value indicates the Kessel Inventory API version to use, currently the only supported version is `v1beta2`
+
+If the message cannot be processed because one of the above headers is missing or invalid, the consumer will not continue processing further messages by design and will require AppSRE/Management Fabric Kessel team to skip the message. This means this event will not be replicated to Kessel and should be resubmitted by the service provider to ensure the replication. The Kessel team can help provide details on the failed message.
+
+It's critical that all records written to the outbox include these values and only these values. Long term remediation is to add validation and prevention logic in your service to ensure outbox records have all required data before writing to the outbox to ensure this can't occur.
+
 ## Schema/API Validation Related Issues
 
 When a message is processed by the Kessel Inventory Consumer, it leverages the Kessel Inventory API client to create/delete the resource via API quest. Validation of requests for Kessel Inventory API occur at two levels:
@@ -27,7 +46,7 @@ The Kessel Inventory API request made by the Kessel Inventory Consumer has faile
 
 Schemas for all resources accepted by Kessel Inventory are defined by their respective service provider in the Kessel Inventory API repo: [Link](https://github.com/project-kessel/inventory-api/tree/main/data/schema/resources). Review the schema and ensure it is accurate for your services' needs.
 
-If the request is being denied for a valid reason, the consumer will not continue processing further messages by design and will require AppSRE/Management Fabric Kessel team to skip the message. This means this event will not be replicated to Kessel and should be resubmitted by the service provider to ensure the replication. The Kessel team can help provide details on the failed message.
+If the request is being denied for a valid reason, the consumer will not continue processing further messages by design and will require AppSRE/Management Fabric Kessel team to skip the message. This means this event will not be replicated to Kessel and should be resubmitted by the service provider to ensure the replication. The Kessel team can help provide details on the failed message. Long term remediation is to add validation and prevention logic in your service to ensure outbox records have all required data before writing to the outbox to ensure this can't occur.
 
 If the request is being denied for an invalid reason, meaning the schema files in Github do not reflect the reason for failure, this could be do to a schema mismatch which will require the Management Fabric Kessel team to update the schema loaded with Kessel to remediate the issue. In this scenario, once the new schema is set, the message will process and continue on.
 
@@ -60,6 +79,6 @@ For the Kessel Inventory Consumer, we are concerned with our two Resource reques
 
 The supported resource types can be found in the [schemas folder](https://github.com/project-kessel/inventory-api/tree/main/data/schema/resources)
 
-Review the validation requirements for the request fields (as denoted by `buf.validate.field` in the request fields). If the validation errors in the pod logs match the validation requirements, then the payload does not meet the API requirements and cannot be processed. The consumer will not continue processing further messages by design and will require AppSRE/Management Fabric Kessel team to skip the message. This means this event will not be replicated to Kessel and should be resubmitted by the service provider to ensure the replication. The Kessel team can help provide details on the failed message.
+Review the validation requirements for the request fields (as denoted by `buf.validate.field` in the request fields). If the validation errors in the pod logs match the validation requirements, then the payload does not meet the API requirements and cannot be processed. The consumer will not continue processing further messages by design and will require AppSRE/Management Fabric Kessel team to skip the message. This means this event will not be replicated to Kessel and should be resubmitted by the service provider to ensure the replication. The Kessel team can help provide details on the failed message. Long term remediation is to add validation and prevention logic in your service to ensure outbox records have all required data before writing to the outbox to ensure this can't occur.
 
 If the validation requirement does not exist in the current Buf Schema, its possible the latest version of Kessel Inventory API with the validation change has not been rolled out. Escalate to the Management Fabric Kessel team to promote the service and restore fucntion.
