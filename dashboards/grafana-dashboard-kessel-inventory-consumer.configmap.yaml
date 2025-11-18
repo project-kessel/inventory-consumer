@@ -863,7 +863,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "(in $range)",
+          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -914,14 +914,14 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(inventory_outbox_save_successes_total[$__range]))",
+              "expr": "sum(increase(inventory_outbox_save_successes_total[15m]))",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "HBI Outbox Events",
+          "title": "HBI Outbox Events (last 15 mins)",
           "type": "stat"
         },
         {
@@ -929,7 +929,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "(in $range)",
+          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -980,14 +980,14 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[$__range]))",
+              "expr": "sum(increase(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[15m]))",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "HBI Processed Events",
+          "title": "HBI Processed Events (last 15 mins)",
           "type": "stat"
         },
         {
@@ -995,13 +995,14 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "(in $range)",
+          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
               "decimals": 0,
+              "fieldMinMax": false,
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
@@ -1055,7 +1056,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(increase(inventory_outbox_save_successes_total[$__range])) - sum(increase(consumer_msgs_processed_total{job='kessel-inventory-consumer-service', topic='outbox.event.hbi.hosts'}[$__range]))",
+              "expr": "clamp_min(\n  sum(increase(inventory_outbox_save_successes_total[15m])) - sum(increase(consumer_msgs_processed_total{job='kessel-inventory-consumer-service', topic='outbox.event.hbi.hosts'}[15m])),\n  0\n)",
               "format": "time_series",
               "instant": false,
               "legendFormat": "__auto",
@@ -1063,7 +1064,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "E2E Lag (Messages)",
+          "title": "E2E Lag (Messages over last 15 mins)",
           "type": "stat"
         },
         {
@@ -1071,7 +1072,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Lag from point where resource is written to outbox table, to consumed and processed by Kessel Inventory Consumer",
+          "description": "Lag from point where resource is written to outbox table, to consumed and processed by Kessel Inventory Consumer (over range)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1156,7 +1157,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum (rate(inventory_outbox_save_successes_total[3m])) - sum(rate(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[3m]))",
+              "expr": "clamp_min(\n  sum(rate(inventory_outbox_save_successes_total[$__range])) - sum(rate(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[$__range])),0\n)",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
@@ -1171,6 +1172,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "over range",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1307,7 +1309,7 @@ data:
       "timezone": "UTC",
       "title": "Kessel Inventory Consumer",
       "uid": "bew68vw3315a8c",
-      "version": 3
+      "version": 4
     }
 kind: ConfigMap
 metadata:
