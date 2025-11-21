@@ -1,5 +1,5 @@
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1 h1:/AZH8sVB6LHv8G+hZlAMCP31NevnesHwYgnlgS5Vt14=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1/go.mod h1:eva/VCrd8X7xuJw+JtwCEyrCKiRRASukFqmirnWBvFU=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1 h1:31on4W/yPcV4nZHL4+UCiCvLPsMqe/vJcNg8Rci0scc=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1/go.mod h1:fUl8CEN/6ZAMk6bP8ahBJPUJw7rbp+j4x+wCcYi2IG4=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 h1:bvDV9vkmnHYOMsOr4WLk+Vo07yKIzd94sVoIqshQ4bU=
@@ -281,8 +281,8 @@ github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b h1:0LFwY6Q3g
 github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/project-kessel/inventory-api v0.0.0-20250725190058-5b12d8b2493a h1:fIkW89mPCrR7ZIxGtKMJzGryPeskRGtP6CYmHqCmszw=
 github.com/project-kessel/inventory-api v0.0.0-20250725190058-5b12d8b2493a/go.mod h1:UqvXosFCZzjRKQ06WoQncYCMKlr30TAPDQJZHYF3nJQ=
-github.com/project-kessel/kessel-sdk-go v1.3.0 h1:9pN66fPL6glNMHMqMmbp44h6hAFKSG6je/8xuowGAVk=
-github.com/project-kessel/kessel-sdk-go v1.3.0/go.mod h1:wPQReT5OgUvuipd7ZKSdwwpmFHVSlDiA+ueeueK6R38=
+github.com/project-kessel/kessel-sdk-go v1.4.0 h1:k4V/a6G4Es8j//OG1iAd0NF3xZ8o8QymtVlhCSKI4x4=
+github.com/project-kessel/kessel-sdk-go v1.4.0/go.mod h1:66IfMGKX5odNiyRa+XxwPdCEoW4wFp5+h23NKN12LLI=
 github.com/prometheus/client_golang v1.23.2 h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h0RJWRi/o0o=
 github.com/prometheus/client_golang v1.23.2/go.mod h1:Tb1a6LWHB3/SPIzCoaDXI4I8UHKeFTEQ1YCr+0Gyqmg=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=
