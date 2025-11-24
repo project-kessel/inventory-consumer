@@ -7,7 +7,7 @@ require (
 	github.com/go-kratos/kratos/v2 v2.9.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/project-kessel/inventory-api v0.0.0-20250725190058-5b12d8b2493a
-	github.com/project-kessel/kessel-sdk-go v1.3.0
+	github.com/project-kessel/kessel-sdk-go v1.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redhatinsights/app-common-go v1.6.9
 	github.com/spf13/cobra v1.10.1
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
