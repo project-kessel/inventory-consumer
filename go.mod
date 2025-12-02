@@ -1,6 +1,6 @@
 module github.com/project-kessel/inventory-consumer
 
-go 1.24.4
+go 1.25.3
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.12.0
