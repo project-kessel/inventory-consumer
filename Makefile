@@ -46,6 +46,16 @@ test:
 	@echo "Overall test coverage:"
 	go tool cover -func=coverage.txt | grep total: | awk '{print $$3}'
 
+.PHONY: lint
+# run go linter with the repositories lint config
+lint:
+	@echo "Running golangci-lint"
+	@$(DOCKER) run -t --rm -v $(PWD):/app:rw,z -w /app golangci/golangci-lint:v2.6.2 golangci-lint run -v
+
+lint-fix:
+	@echo "Running golangci-lint run --fix"
+	@$(DOCKER) run -t --rm -v $(PWD):/app:rw,z -w /app golangci/golangci-lint:v2.6.2 golangci-lint run --fix -v
+
 .PHONY: docker-build-push
 docker-build-push:
 	./build_deploy.sh
