@@ -97,8 +97,8 @@ ERROR ts=2025-09-08T04:33:44Z caller=log/log.go:30 service.name=inventory-consum
 
 2. Spin up the Kessel Debug container to connect to Kafka
 
-> [!NOTE]
-> Kessel Engineers do not have permissions to run containers in production. AppSRE will need to assist in running the container and if access can't be granted, will need to run through these steps for you.
+> [!IMPORTANT]
+> Kessel Engineers do not have permissions to run or access containers in production without prior elevation of privileges. Before continuing, you must go through the [Breakglass process](https://project-kessel.github.io/docs-internal-overlay/for-red-hatters/running-kessel/monitoring-kessel/breakglass-sop) first in order to run and access the debug pod.
 
 ```bash
 oc process --local \
@@ -116,6 +116,7 @@ source /usr/local/bin/env-setup.sh
 ```
 
 (For more on the Kessel Debug container, check out the [README](https://github.com/project-kessel/inventory-api/tree/main/tools/kessel-debug-container#running-the-debug-container))
+
 4. Capture the event message for the failing offset
 
 ```bash
@@ -162,5 +163,5 @@ Once done, make sure to remove the Kessel Debug container
 # after exiting from your rsh session
 oc process --local \
     -f https://raw.githubusercontent.com/project-kessel/inventory-api/refs/heads/main/tools/kessel-debug-container/kessel-debug-deploy.yaml \
-    -p ENV=prod | oc apply -f -
+    -p ENV=prod | oc delete -f -
 ```
