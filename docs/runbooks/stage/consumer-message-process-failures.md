@@ -162,3 +162,4 @@ oc process --local \
     -f https://raw.githubusercontent.com/project-kessel/inventory-api/refs/heads/main/tools/kessel-debug-container/kessel-debug-deploy.yaml \
     -p ENV=stage | oc delete -f -
 ```
+
