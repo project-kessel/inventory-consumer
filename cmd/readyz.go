@@ -52,6 +52,7 @@ TLS is disabled by default but can be enabled if needed.`,
 			host, _, err := net.SplitHostPort(clientOptions.InventoryURL)
 			if err != nil {
 				// If SplitHostPort fails, assume the URL is just a hostname
+				log.Info("failed to split host port, assuming the URL is just a hostname", "url", clientOptions.InventoryURL)
 				host = clientOptions.InventoryURL
 			}
 
