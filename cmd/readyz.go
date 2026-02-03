@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	InventoryLiveZHTTPEndpoint = "/api/inventory/v1/livez"
+	InventoryLiveZHTTPEndpoint = "/api/kessel/v1/livez"
 	InventoryHTTPPort          = 8000
 	InventoryHTTPTLSPort       = 8000
 )
@@ -27,7 +27,7 @@ func readyzCommand(clientOptions *kessel.Options) *cobra.Command {
 		Use:   "readyz",
 		Short: "Check if the Inventory API service is ready",
 		Long: `Check if the Inventory API service is ready by making an HTTP request
-to the /api/inventory/v1/livez endpoint.
+to the /api/kessel/v1/livez endpoint.
 The InventoryURL from the client configuration is used as the HTTP endpoint.
 TLS configuration is applied based on the client options (insecure flag and CA cert file).`,
 		SilenceUsage:  true,
