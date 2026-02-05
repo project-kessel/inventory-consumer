@@ -6,7 +6,7 @@
     "signal.enabled.channels": "source,kafka",
     "signal.kafka.topic": "host-inventory.signal",
     "signal.kafka.bootstrap.servers": "kafka:9093",
-    "signal.data.collection": "hbi.signal",
+    "signal.data.collection": "hbi.debezium.signal",
     "database.server.name": "host-inventory-db",
     "database.dbname": "host-inventory",
     "database.hostname": "hbidatabase",
@@ -14,17 +14,14 @@
     "database.user": "postgres",
     "database.password": "supersecurewow",
     "topic.prefix": "host-inventory",
-    "table.include.list": "hbi.hosts",
+    "table.include.list": "hbi.hosts_p.*",
     "plugin.name": "pgoutput",
-    "transforms": "route,unwrap,addMetadata,addOpHeader,addVerHeader,fieldFilter",
+    "transforms": "route,unwrap,addOpHeader,addVerHeader,fieldFilter",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones": "false",
     "transforms.route.type": "io.debezium.transforms.ByLogicalTableRouter",
     "transforms.route.topic.regex": "host-inventory\\.hbi\\.hosts.*",
     "transforms.route.topic.replacement": "host-inventory.hbi.hosts",
-    "transforms.addMetadata.type": "org.apache.kafka.connect.transforms.InsertField$Value",
-    "transforms.addMetadata.static.field": "source_system",
-    "transforms.addMetadata.static.value": "host-inventory-db",
     "transforms.addOpHeader.type": "org.apache.kafka.connect.transforms.InsertHeader",
     "transforms.addOpHeader.header": "operation",
     "transforms.addOpHeader.value.literal": "migration",
@@ -35,4 +32,3 @@
     "transforms.fieldFilter.include": "id,ansible_host,insights_id,satellite_id,subscription_manager_id,groups"
   }
 }
-

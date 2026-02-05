@@ -74,7 +74,7 @@ inventory-consumer-down:
 
 .PHONY: setup-hbi-db
 setup-hbi-db:
-	PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -f development/configs/hbi-full-setup.sql
+	PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -f development/configs/hosts.schema.sql
 
 .PHONY: setup-connectors
 setup-connectors: setup-migration-connector setup-outbox-connector
