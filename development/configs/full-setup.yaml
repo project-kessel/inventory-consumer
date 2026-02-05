@@ -12,7 +12,7 @@ consumer:
   auth:
     enabled: false
 client:
-  enabled: false
+  enabled: true
   url: "inventory-api:9081"
   enable-oidc-auth: false
   insecure-client: true
