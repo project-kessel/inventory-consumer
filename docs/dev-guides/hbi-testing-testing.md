@@ -1,3 +1,65 @@
+# Local HBI Migration Testing using Debezium
+
+This process is useful for testing the full HBI migration process leveraging Kafka and Debezium. Everything needed to run the test is provide with the exception of host data to load into the database. The [DB-Generator](https://github.com/tonytheleg/db-generator) tool is a good resource for generating sql files for importing hosts.
+
+### Steps:
+
+1. Spin up everything via podman compose (See [Using Podman Compose](../../README.md#using-podman-compose-recommended))
+2. Setup the HBI Database: `make setup-hbi-db`
+3. Import your hosts
+
+Example host import process using db-generator:
+
+```shell
+# generates 1 million hosts for importing
+./db-generator --num-hosts 10 --num-files 100
+
+# import hosts
+for i in `ls hosts-import-*`; do PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -f $i; done
+```
+
+4. Load the correct schema into Relations API
+
+```shell
+curl -o ./schema.zed https://raw.githubusercontent.com/RedHatInsights/rbac-config/refs/heads/master/configs/stage/schemas/schema.zed
+
+# make sure your targ
+zed schema write --endpoint localhost:50051 --insecure --token foobar ./schema.zed
+```
+
+5. Kick off the migration: `make run-migration-test`
+
+This will setup the connectors, of which the migration connector is configured to start snapshotting as soon as its configured.
+
+You can verify that Connect and KIC has started processing by reviewing the logs:
+
+```shell
+# Kafka Connect
+podman logs development-kic-connect-1
+
+# KIC
+podman logs development-inventory-consumer-{1..3}
+# or each pod individually
+podman logs development-inventory-consumer-1
+podman logs development-inventory-consumer-2
+podman logs development-inventory-consumer-3
+```
+
+
+If you would like to re-test the migration but not have to reload the database again:
+
+1. Clean up the current migration: `make cleanup-migration-test`
+
+This will remove any old pods, connectors, replication slots, and topics, clean up Kessel Inventory DB for another run, but does nothing to the HBI database.
+
+2. Prep for another migration: `make setup-migration-test.sh`
+
+This just re-starts any stopped pods and ensures things are recreated
+
+3. Run the migration again: `make run-migration-test`
+
+When you're done testing, tear it all down: `make inventory-consumer-down`
+
 # Local HBI Outbox Consumer Processing Using Kafka Event
 
 This process is useful for testing the Kessel service individually and does not require any extra HBI bits. This process works by publishing a message to the HBI outbox topic which will then be captured by the Inventory Consumer and replicated down to relations.
@@ -34,7 +96,7 @@ podman logs relations-api-relations-api-1
 psql -h localhost -p 5433 -d spicedb -U postgres # requires password available in Inventory API repo
 ```
 
-# HBI Migration Testing using Hosts Table and Debezium
+# Ephemeral HBI Migration Testing
 
 To test HBI Migration (or outbox processing) using Debezium, it is recommend to leverage the ephemeral process using the insights-service-deployer script. This will ensure the latest HBI code changes and database schema changes as to avoid false negatives/positives in testing. See the [HBI Migration runbook](https://github.com/project-kessel/insights-service-deployer/blob/main/docs/hbi-migration-runbook.md) for the process
 

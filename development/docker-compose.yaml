@@ -26,6 +26,7 @@ services:
     restart: "always"
     networks:
       - kessel
+    scale: 3
 
   hbidatabase:
     image: "postgres"
@@ -50,7 +51,7 @@ services:
     command: |
       "
       echo -e 'Creating kafka topics'
-      bin/kafka-topics.sh --bootstrap-server kafka:9093 --create --if-not-exists --topic host-inventory.hbi.hosts --replication-factor 1 --partitions 1
+      bin/kafka-topics.sh --bootstrap-server kafka:9093 --create --if-not-exists --topic host-inventory.hbi.hosts --replication-factor 1 --partitions 6
       bin/kafka-topics.sh --bootstrap-server kafka:9093 --create --if-not-exists --topic outbox.event.hbi.hosts --replication-factor 1 --partitions 1
       bin/kafka-topics.sh --bootstrap-server kafka:9093 --create --if-not-exists --topic host-inventory.signal --replication-factor 1 --partitions 1
       "

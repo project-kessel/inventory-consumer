@@ -74,7 +74,7 @@ inventory-consumer-down:
 
 .PHONY: setup-hbi-db
 setup-hbi-db:
-	PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -f development/configs/hbi-full-setup.sql
+	PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -f development/configs/hosts.schema.sql
 
 .PHONY: setup-connectors
 setup-connectors: setup-migration-connector setup-outbox-connector
@@ -91,3 +91,32 @@ setup-outbox-connector:
 check-connector-status:
 	curl localhost:8084/connectors/hbi-outbox-connector/status | jq -r
 	curl localhost:8084/connectors/hbi-migration-connector/status | jq -r
+
+.PHONY: delete-connectors
+delete-connectors: delete-migration-connector delete-outbox-connector
+
+.PHONY: delete-migration-connector
+delete-migration-connector:
+	curl -X DELETE http://localhost:8084/connectors/hbi-migration-connector
+
+.PHONY: delete-outbox-connector
+delete-outbox-connector:
+	curl -X DELETE http://localhost:8084/connectors/hbi-outbox-connector
+
+.PHONY: delete-connectors
+delete-connectors: delete-migration-connector delete-outbox-connector
+
+.PHONY: remove-replication-slots
+remove-replication-slots:
+	-PGPASSWORD=supersecurewow psql -h localhost -p 5435 -U postgres -d host-inventory -c "SELECT pg_drop_replication_slot('debezium_hosts')" -c "SELECT pg_drop_replication_slot('debezium_outbox')"
+
+.PHONY: setup-migration-test
+setup-migration-test: inventory-consumer-up
+
+.PHONY: run-migration-test
+run-migration-test:
+	./scripts/run-migration-test.sh
+
+.PHONY: cleanup-migration-test
+cleanup-migration-test:
+	./scripts/cleanup-migration-test.sh

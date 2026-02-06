@@ -1,12 +1,14 @@
 consumer:
   bootstrap-servers: ["kafka:9093"]
+  commit-modulo: 300
   topics:
   - outbox.event.hbi.hosts
   - host-inventory.hbi.hosts
   retry-options:
-    consumer-max-retries: 3
-    operation-max-retries: 4
+    consumer-max-retries: -1
+    operation-max-retries: -1
     backoff-factor: 5
+    max-backoff-seconds: 30
   auth:
     enabled: false
 client:
