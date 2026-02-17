@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7-1770267347 AS builder
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7-1771346502 AS builder
 
 ARG TARGETARCH
 USER root
@@ -20,7 +20,7 @@ COPY main.go Makefile ./
 ARG VERSION
 RUN VERSION=${VERSION} make build
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7-1770267347
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7-1771346502
 
 COPY --from=builder /workspace/bin/inventory-consumer /usr/local/bin/
 
