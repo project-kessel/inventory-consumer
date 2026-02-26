@@ -109,19 +109,8 @@ curl localhost:9404/metrics
 
 ### Monitoring in Ephemeral using Podman Compose
 
-The monitoring stack available in [Kessel Inventory](https://github.com/project-kessel/inventory-api/blob/main/docs/dev-guides/docker-compose-options.md#monitoring-stack-only) can be used to monitor replication-related workloads in Ephemeral for performance testing.
+The `monitoring-only` option available in Kessel Inventory's compose setup can be used to monitor replication-related workloads deployed in Ephemeral for performance testing.
 
-The process consists of:
-1. Starting the monitoring stack using podman (see above link)
-2. Port forward each of the services locally
+To get started you'll need to deploy Kessel to ephemeral: `bonfire deploy kessel -C kessel-inventory-consumer`
 
-```shell
-# Note: the address 0.0.0.0 is used to ensure the podman containers can use the special host.containers.internal address to access the host
-oc port-forward --address 0.0.0.0 svc/kessel-inventory-api 8000:8000 &
-oc port-forward --address 0.0.0.0 svc/kessel-inventory-consumer-service 9000:9000 &
-oc port-forward --address 0.0.0.0 kessel-kafka-connect-connect-0 9404:9404 &
-```
-
-3. Access Prometheus in your browser at `localhost:9050`
-
-Metrics will then be scraped from the running pods in ephemeral through your port-forwarding connection!
+Once deployed, follow the steps in the [guide](https://github.com/project-kessel/inventory-api/blob/main/docs/dev-guides/docker-compose-options.md#monitoring-stack-only) to setup the monitoring stack.
