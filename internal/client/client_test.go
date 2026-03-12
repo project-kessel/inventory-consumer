@@ -23,6 +23,10 @@ import (
 )
 
 func createTestConfig(enabled bool, enableOidcAuth bool, caCertFile string) CompletedConfig {
+	return createTestConfigWithBearer(enabled, enableOidcAuth, caCertFile, "")
+}
+
+func createTestConfigWithBearer(enabled bool, enableOidcAuth bool, caCertFile string, bearerToken string) CompletedConfig {
 	options := &Options{
 		Enabled:        enabled,
 		InventoryURL:   "localhost:9000",
@@ -32,6 +36,7 @@ func createTestConfig(enabled bool, enableOidcAuth bool, caCertFile string) Comp
 		ClientId:       "test-client",
 		ClientSecret:   "test-secret",
 		TokenEndpoint:  "http://localhost:8080/token",
+		BearerToken:    bearerToken,
 	}
 
 	return CompletedConfig{
@@ -160,6 +165,14 @@ func TestNew(t *testing.T) {
 			expectAuth:    true,
 			shouldError:   false,
 			useInMemory:   true,
+		},
+		{
+			name:          "enabled client with insecure and bearer token creates client successfully",
+			config:        createTestConfigWithBearer(true, false, "", "test-jwt-token"),
+			expectEnabled: true,
+			expectAuth:    false,
+			shouldError:   false,
+			useInMemory:   false,
 		},
 	}
 
