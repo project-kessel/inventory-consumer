@@ -77,10 +77,21 @@ func TestOptions_Validate(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "enable oidc auth is enabled and insecure is enabled",
+			name: "enable oidc auth is enabled and insecure is enabled (JWT over insecure gRPC allowed)",
 			options: &Options{
 				Insecure:       true,
 				EnableOidcAuth: true,
+				InventoryURL:   "localhost:9000",
+			},
+			expectError: false,
+		},
+		{
+			name: "both bearer-token and enable-oidc-auth when insecure is invalid",
+			options: &Options{
+				Insecure:       true,
+				EnableOidcAuth: true,
+				BearerToken:    "a-token",
+				InventoryURL:   "localhost:9000",
 			},
 			expectError: true,
 		},

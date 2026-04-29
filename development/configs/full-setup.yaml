@@ -14,7 +14,11 @@ consumer:
 client:
   enabled: true
   url: "inventory-api:9081"
-  enable-oidc-auth: false
   insecure-client: true
+  enable-oidc-auth: true
+  client-id: "<client-id>"
+  client-secret: "<client-secret"
+  # Must be the token URL that accepts POST (client_credentials), not the realm root
+  sso-token-endpoint: "https://example.com/token"  
 log:
-  level: "info"
+  level: "debug"
