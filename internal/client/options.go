@@ -15,6 +15,9 @@ type Options struct {
 	ClientId       string `mapstructure:"client-id"`
 	ClientSecret   string `mapstructure:"client-secret"`
 	TokenEndpoint  string `mapstructure:"sso-token-endpoint"`
+	// BearerToken is an optional static JWT sent as Per-RPC credentials when Insecure is true.
+	// Allows sending a valid JWT over insecure gRPC (no TLS) without changing the SDK.
+	BearerToken string `mapstructure:"bearer-token"`
 }
 
 func NewOptions() *Options {
@@ -37,6 +40,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet, prefix string) {
 	fs.StringVar(&o.ClientSecret, prefix+"client-secret", o.ClientSecret, "service account secret")
 	fs.StringVar(&o.TokenEndpoint, prefix+"sso-token-endpoint", o.TokenEndpoint, "sso token endpoint for authentication")
 	fs.BoolVar(&o.EnableOidcAuth, prefix+"enable-oidc-auth", o.EnableOidcAuth, "enable oidc token auth to connect with Inventory API service")
+	fs.StringVar(&o.BearerToken, prefix+"bearer-token", o.BearerToken, "optional static JWT sent as Per-RPC credentials when using insecure gRPC to Inventory API")
 
 }
 
@@ -47,8 +51,9 @@ func (o *Options) Validate() []error {
 		errs = append(errs, fmt.Errorf("kessel url may not be empty"))
 	}
 
-	if o.EnableOidcAuth && o.Insecure {
-		errs = append(errs, fmt.Errorf("enable-oidc-auth and insecure cannot be both true"))
+	// Insecure + JWT (BearerToken or OIDC) is allowed: JWT is sent via Per-RPC credentials.
+	if o.EnableOidcAuth && o.Insecure && o.BearerToken != "" {
+		errs = append(errs, fmt.Errorf("cannot set both bearer-token and enable-oidc-auth when insecure"))
 	}
 
 	return errs

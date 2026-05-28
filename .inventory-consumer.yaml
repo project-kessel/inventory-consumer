@@ -14,5 +14,7 @@ client:
   url: "localhost:9000"
   enable-oidc-auth: false
   insecure-client: true
+  # optional: static JWT sent as Per-RPC credentials when insecure-client is true (no TLS)
+  # bearer-token: "<your-jwt>"
 log:
   level: "info"
