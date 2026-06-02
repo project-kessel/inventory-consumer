@@ -93,7 +93,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -167,7 +167,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -234,7 +234,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -333,7 +333,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -439,7 +439,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -538,7 +538,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -631,7 +631,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -726,7 +726,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -794,7 +794,7 @@ data:
             },
             "showHeader": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -861,7 +861,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "${outbox_datasource}"
           },
           "description": "",
           "fieldConfig": {
@@ -906,12 +906,12 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${datasource}"
+                "uid": "${outbox_datasource}"
               },
               "editorMode": "code",
               "expr": "sum(increase(inventory_outbox_save_successes_total[15m]))",
@@ -972,7 +972,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -992,8 +992,8 @@ data:
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
+            "type": "datasource",
+            "uid": "-- Mixed --"
           },
           "description": "",
           "fieldConfig": {
@@ -1047,8 +1047,22 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${outbox_datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum(increase(inventory_outbox_save_successes_total[15m]))",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "outbox",
+              "range": true,
+              "refId": "A"
+            },
             {
               "datasource": {
                 "type": "prometheus",
@@ -1056,21 +1070,43 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "clamp_min(\n  sum(increase(inventory_outbox_save_successes_total[15m])) - sum(increase(consumer_msgs_processed_total{job='kessel-inventory-consumer-service', topic='outbox.event.hbi.hosts'}[15m])),\n  0\n)",
+              "expr": "sum(increase(consumer_msgs_processed_total{job='kessel-inventory-consumer-service', topic='outbox.event.hbi.hosts'}[15m]))",
               "format": "time_series",
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "processed",
               "range": true,
-              "refId": "A"
+              "refId": "B"
             }
           ],
           "title": "E2E Lag (Messages over last 15 mins)",
+          "transformations": [
+            {
+              "id": "joinByField",
+              "options": {
+                "byField": "Time",
+                "mode": "outer"
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "E2E Lag",
+                "binary": {
+                  "left": "outbox",
+                  "operator": "-",
+                  "right": "processed"
+                },
+                "mode": "binary",
+                "replaceFields": true
+              }
+            }
+          ],
           "type": "stat"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
+            "type": "datasource",
+            "uid": "-- Mixed --"
           },
           "description": "Lag from point where resource is written to outbox table, to consumed and processed by Kessel Inventory Consumer (over range)",
           "fieldConfig": {
@@ -1149,22 +1185,56 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${outbox_datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(inventory_outbox_save_successes_total[$__range]))",
+              "instant": false,
+              "legendFormat": "outbox",
+              "range": true,
+              "refId": "A"
+            },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "clamp_min(\n  sum(rate(inventory_outbox_save_successes_total[$__range])) - sum(rate(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[$__range])),0\n)",
+              "expr": "sum(rate(consumer_msgs_processed_total{job=\"kessel-inventory-consumer-service\",topic=\"outbox.event.hbi.hosts\"}[$__range]))",
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "processed",
               "range": true,
-              "refId": "A"
+              "refId": "B"
             }
           ],
           "title": "E2E Replication Lag Rate",
+          "transformations": [
+            {
+              "id": "joinByField",
+              "options": {
+                "byField": "Time",
+                "mode": "outer"
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "E2E Lag Rate",
+                "binary": {
+                  "left": "outbox",
+                  "operator": "-",
+                  "right": "processed"
+                },
+                "mode": "binary",
+                "replaceFields": true
+              }
+            }
+          ],
           "type": "timeseries"
         },
         {
@@ -1243,7 +1313,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1271,8 +1341,8 @@ data:
         "list": [
           {
             "current": {
-              "text": "crcs02ue1-prometheus",
-              "value": "PDD8BE47D10408F45"
+              "text": "hccs01ue1-prometheus",
+              "value": "P565978F9C10FC47D"
             },
             "description": "Choose between the production, stage, or Govcloud environments",
             "includeAll": false,
@@ -1298,18 +1368,33 @@ data:
             "refresh": 1,
             "regex": "/(appsres11ue1-prometheus)|(appsrep11ue1-prometheus)/",
             "type": "datasource"
+          },
+          {
+            "current": {
+              "text": "crcs02ue1-prometheus",
+              "value": "PDD8BE47D10408F45"
+            },
+            "description": "Datasource for HBI outbox metrics (crc/perf environments only)",
+            "includeAll": false,
+            "label": "Outbox Datasource",
+            "name": "outbox_datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "/(crcp01ue1-prometheus)|(crcfrp01ugw1-prometheus)|(crcs02ue1-prometheus)|(crcfrs01ugw1-prometheus)|(insights-perf-prometheus)/",
+            "type": "datasource"
           }
         ]
       },
       "time": {
-        "from": "now-30m",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "UTC",
       "title": "Kessel Inventory Consumer",
       "uid": "bew68vw3315a8c",
-      "version": 4
+      "version": 5
     }
 kind: ConfigMap
 metadata:
