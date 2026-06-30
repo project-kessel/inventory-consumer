@@ -95,37 +95,3 @@ podman logs relations-api-relations-api-1
 # access resources in Inventory API DB
 psql -h localhost -p 5433 -d spicedb -U postgres # requires password available in Inventory API repo
 ```
-
-# Ephemeral HBI Migration Testing
-
-To test HBI Migration (or outbox processing) using Debezium, it is recommend to leverage the ephemeral process using the insights-service-deployer script. This will ensure the latest HBI code changes and database schema changes as to avoid false negatives/positives in testing. See the [HBI Migration runbook](https://github.com/project-kessel/insights-service-deployer/blob/main/docs/hbi-migration-runbook.md) for the process
-
-### Ad-Hoc Snapshots
-
-If you're testing HBI with Debezium using the above ephemeral process, you can also test performing blocking and incremental snapshots through Debeizum.
-
-To trigger the snapshot:
-
-1. Spin up the Kessel Debug container
-
-```shell
-oc process --local \
-    -f https://raw.githubusercontent.com/project-kessel/inventory-api/refs/heads/main/tools/kessel-debug-container/kessel-debug-deploy.yaml \
-    -p ENV="env-$(oc project)" | oc apply -f -
-
-# rsh to the debug container
-oc rsh kessel-debug
-
-# Setup Kafka env vars
-source /usr/local/bin/env-setup.sh
-```
-
-2. Trigger the snapshot by producing an event to the snapshot table
-
-```bash
-# For a blocking snapshot
-echo 'host-inventory|{"type":"execute-snapshot","data":{"data-collections":["hbi.hosts"],"type":"blocking"}}' | kcat -P -b $BOOTSTRAP_SERVERS -t host-inventory.signal -K "|"
-
-# For an incremental snapshot
-echo 'host-inventory|{"type":"execute-snapshot","data":{"data-collections":["hbi.hosts"],"type":"INCREMENTAL"}}' | kcat -P -b $BOOTSTRAP_SERVERS -t host-inventory.signal -K "|"
-```
