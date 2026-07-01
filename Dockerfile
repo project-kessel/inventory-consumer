@@ -1,14 +1,10 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8-1782366411 AS builder
-
-ARG TARGETARCH
-USER root
-RUN microdnf install -y tar gzip make which gcc gcc-c++ cyrus-sasl-lib findutils git go-toolset
+# Build stage -- the Go toolchain embeds the validated FIPS module in all binaries automatically.
+FROM registry.access.redhat.com/hi/go:1.26.4-fips AS builder
 
 WORKDIR /workspace
 
 COPY go.mod go.sum ./
 
-ENV CGO_ENABLED 1
 RUN go mod download
 
 COPY cmd ./cmd
@@ -20,9 +16,14 @@ COPY main.go Makefile ./
 ARG VERSION
 RUN VERSION=${VERSION} make build
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8-1782366411
+# Runtime stage -- set GODEBUG so the binary runs in FIPS mode.
+FROM registry.access.redhat.com/hi/core-runtime:2.42-openssl-fips
+
+WORKDIR /
 
 COPY --from=builder /workspace/bin/inventory-consumer /usr/local/bin/
+
+ENV GODEBUG=fips140=on
 
 USER 1001
 ENV PATH="$PATH:/usr/local/bin"
