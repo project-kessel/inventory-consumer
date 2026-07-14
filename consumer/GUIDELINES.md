@@ -28,13 +28,13 @@
 - `Shutdown()` sets `shutdownInProgress = true` under the lock before committing remaining offsets and closing the consumer. This flag prevents the rebalance callback from double-committing.
 - `RebalanceCallback()` checks `shutdownInProgress` under the lock. If true, it skips the offset commit and returns nil. If false and there are no stored offsets, it returns early. Otherwise it commits.
 - The `RebalanceCallback` signature must satisfy `func(*kafka.Consumer, kafka.Event) error`. The method receives a `*kafka.Consumer` parameter but uses `i.Consumer` (the InventoryConsumer's embedded consumer) instead. Do not use the passed-in consumer parameter.
-- `Shutdown()` always returns `ErrClosed`. The `Consume()` loop treats `ErrClosed` as a restartable condition; any other error from Shutdown is wrapped and propagated as fatal.
+- `Shutdown()` returns `ErrClosed` on successful or already-closed shutdown. If the underlying `Consumer.Close()` fails, it returns that error instead. The `Consume()` loop treats `ErrClosed` as a restartable condition; any non-`ErrClosed` error from Shutdown is wrapped and propagated as fatal.
 
 ## Two-Level Retry Strategy
 
 - **Consumer-level retry** (`Run()`): When `Consume()` returns `ErrClosed`, the entire consumer is recreated with a new Kafka connection and the loop restarts. This re-reads the current message from the earliest uncommitted offset. Controlled by `ConsumerMaxRetries` (default 2). Set to -1 for infinite retries.
 - **Operation-level retry** (`Retry()`): Individual gRPC operations (ReportResource, DeleteResource) are retried with backoff within a single consume cycle. Controlled by `OperationMaxRetries` (default 3). Set to -1 for infinite retries.
-- Backoff formula: `min(BackoffFactor * attempts * 300ms, MaxBackoffSeconds)`. Same formula at both levels.
+- Backoff formula: `min(BackoffFactor * attempts * 300ms, MaxBackoffSeconds * time.Second)`. Same formula at both levels. The maximum is expressed in seconds in the config but converted to a `time.Duration` in the calculation.
 - `Retry()` accepts optional variadic `errorHandler` functions. If the first handler returns true, the retry loop short-circuits and returns `(nil, nil)` -- the message is silently dropped. Used for NotFound errors on delete operations.
 - When `Retry()` exhausts max retries, it returns `ErrMaxRetries`. This causes `ProcessMessage` to fail, which causes `Consume()` to exit the loop and trigger shutdown.
 
@@ -43,7 +43,7 @@
 - Messages must have two Kafka headers: `operation` and `version`. Both are required and validated against allow-lists (`validOperations`, `validApiVersions`).
 - Extra headers beyond the required set are silently ignored (filtered by `requiredHeaders` map during parsing).
 - Header parsing uses `mapstructure` with `ErrorUnused: true` to decode into `EventHeaders`.
-- Validation errors are wrapped with `ErrValidation` sentinel. Missing/invalid headers cause the consume loop to exit (`run = false`), triggering consumer-level restart.
+- Validation errors are wrapped with `ErrValidation` sentinel. Missing/invalid headers cause the consume loop to exit (`run = false`), triggering consumer-level restart. Because the offset is only stored after successful `ProcessMessage`, a malformed message that fails header validation will replay on restart. The current behavior is intentional -- the consumer restarts and retries the same message. If a permanently malformed message causes infinite replay, it must be addressed by skipping the record or routing it to a dead-letter queue at the application level.
 - Message body follows the Debezium outbox pattern: `{"schema": {...}, "payload": {...}}`. The `MessagePayload.RequestPayload` field is an `interface{}` that gets re-marshaled to JSON then unmarshaled into the target protobuf type.
 - `ParseCreateOrUpdateMessage` extracts `transaction_id` from `payload.representations.metadata.transaction_id` and sets it as the protobuf `IdempotencyKey` oneof. This only applies to `ReportResourceRequest`; other types are silently skipped.
 - `ParseDeleteMessage` does not extract transaction_id.

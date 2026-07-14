@@ -26,7 +26,7 @@ Key external dependencies:
 
 The processing pipeline flows through these stages:
 
-```
+```text
 Kafka Topic -> Poll Loop (consumer.go) -> ParseHeaders -> ProcessMessage
   -> [ReportResource|DeleteResource]: ParseCreateOrUpdateMessage / ParseDeleteMessage -> gRPC Client
   -> [migration]: transforms package -> gRPC Client
@@ -153,4 +153,4 @@ This is the most common extension task. The full procedure is in [consumer/trans
 
 ## Logging
 
-Logging uses `go-kratos/kratos/v2/log`. The log level is configurable via the `log.level` YAML key (debug, info, warn, error, fatal; defaults to info). Each subsystem creates a `log.Helper` scoped with a `subsystem` key. Debug-level logging includes full config dumps (via `config.LogConfigurationInfo`) and message payloads. Never log secrets (passwords, tokens).
+Logging uses `go-kratos/kratos/v2/log`. The log level is configurable via the `log.level` YAML key (debug, info, warn, error, fatal; defaults to info). Each subsystem creates a `log.Helper` scoped with a `subsystem` key. Debug-level logging includes full config dumps (via `config.LogConfigurationInfo`) and full Kafka message payloads (key and value are logged via `msg.Value` and `msg.Key` in `Consume()` and `ProcessMessage()`). Never log secrets (passwords, tokens). When adding debug logging, limit output to sanitized metadata -- avoid logging raw message bodies in new code paths.

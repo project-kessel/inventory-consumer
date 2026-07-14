@@ -19,7 +19,7 @@ Each configurable component uses a three-tier pattern spread across two files (o
 ### Lifecycle in Command Handlers
 
 The required call sequence in a command's `RunE` is:
-```
+```text
 options.Complete() -> options.Validate() -> NewConfig(options).Complete()
 ```
 Always check each step's error return before proceeding (when the method returns errors). See `cmd/start.go` for the canonical example.
@@ -47,7 +47,7 @@ Always check each step's error return before proceeding (when the method returns
 
 `AddFlags` receives a `prefix string`. If non-empty, prepend `prefix + "."` to every flag name. This creates the dot-separated hierarchy that Viper uses to map between YAML keys, flags, and env vars.
 
-```
+```text
 consumer.auth.sasl-mechanism   <-- flag name
 consumer:                      <-- YAML nesting
   auth:

@@ -2,9 +2,9 @@
 
 The Kessel Inventory Consumer (KIC) is a standalone dedicated Kafka consumer group used to expose an eventing based entry point to the Kessel Inventory API. Its purpose is to subscribe to Service Provider owned Kafka topics and ensure reporter resource updates are replicated to Inventory API through events.
 
-### Project Structure
+## Project Structure
 
-```
+```text
 cmd/                       CLI commands (start, readyz) and config wiring
 consumer/                  Core Kafka consumer loop, message parsing, retry, shutdown
   transforms/              CDC-to-protobuf transforms for Debezium messages
@@ -16,7 +16,7 @@ deploy/                    OpenShift ClowdApp manifests
 development/               Local Podman Compose setup and configs
 ```
 
-### Documentation
+## Documentation
 
 - [AGENTS.md](./AGENTS.md) -- AI agent onboarding, architecture overview, and conventions
 - Guidelines -- mandatory rules for each subsystem:

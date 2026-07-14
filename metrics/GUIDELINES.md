@@ -41,7 +41,7 @@ When adding a new metric, add the field to the struct AND register it in `New`. 
 ## Choosing Gauge vs Counter
 
 - Use `Int64Gauge` for point-in-time values from Kafka stats: offsets, lag, queue sizes, state indicators, ages. Record with `.Record(ctx, value, labels)`.
-- Use `Int64Counter` for monotonically increasing values: messages processed, errors, rebalance count. Update with `.Add(ctx, value, labels)`. For stats-sourced counters, pass the absolute value from librdkafka (Prometheus computes deltas). For app-level counters, increment by 1 via the `Incr` helper.
+- Use `Int64Counter` for monotonically increasing values: messages processed, errors, rebalance count. Update with `.Add(ctx, value, labels)`. For app-level counters, increment by 1 via the `Incr` helper. Note: `rebalanceCnt` currently passes the cumulative value from librdkafka directly to `Int64Counter.Add()` on each stats callback, which double-counts because `Add()` is additive. New stats-sourced counters should either compute the delta between successive callbacks or use an `Int64Gauge` with `.Record()` for cumulative values.
 - Boolean-style state indicators (e.g., `fetchState`, `state`) are gauges recording `0` for the healthy state and `1` for any unhealthy state, with the actual state string as an attribute. For example, when `CGRP.State == "up"`, `consumer_stats_state` records `0` with attribute `state="up"`. The Grafana dashboard filters on the `state="up"` attribute to identify the consumer group -- the gauge value `0` indicates healthy.
 
 ## The Incr Helper

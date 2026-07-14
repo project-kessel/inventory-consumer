@@ -72,8 +72,8 @@ The consumer holds `ClientProvider` as the `Client` field on `InventoryConsumer`
 2. Passes it as `ClientProvider` to `consumer.Run(options, config, client, logger)`
 3. `Run()` internally constructs `InventoryConsumer` via `consumer.New(config, client, logger, nil)`
 4. In `ProcessMessage`, every API call is guarded by `i.Client.IsEnabled()` before invocation
-4. API calls are wrapped in `i.Retry(func() (interface{}, error) { ... })` for retry with backoff
-5. gRPC status codes are inspected via `status.FromError(err)` for specific error handling (e.g., `codes.NotFound` for delete operations causes message drop instead of retry)
+5. API calls are wrapped in `i.Retry(func() (interface{}, error) { ... })` for retry with backoff
+6. gRPC status codes are inspected via `status.FromError(err)` for specific error handling (e.g., `codes.NotFound` for delete operations causes message drop instead of retry)
 
 When adding new operations, follow the existing pattern: check `IsEnabled()`, wrap in `Retry()`, and handle domain-specific gRPC status codes with an `errorHandler` function.
 
