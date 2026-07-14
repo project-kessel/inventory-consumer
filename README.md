@@ -2,6 +2,32 @@
 
 The Kessel Inventory Consumer (KIC) is a standalone dedicated Kafka consumer group used to expose an eventing based entry point to the Kessel Inventory API. Its purpose is to subscribe to Service Provider owned Kafka topics and ensure reporter resource updates are replicated to Inventory API through events.
 
+### Project Structure
+
+```
+cmd/                       CLI commands (start, readyz) and config wiring
+consumer/                  Core Kafka consumer loop, message parsing, retry, shutdown
+  transforms/              CDC-to-protobuf transforms for Debezium messages
+  types/                   Domain types for CDC source systems
+internal/client/           gRPC client wrapping kessel-sdk-go
+internal/config/           Top-level config aggregation, ClowdApp injection
+metrics/                   OpenTelemetry metrics and Prometheus exporter
+deploy/                    OpenShift ClowdApp manifests
+development/               Local Podman Compose setup and configs
+```
+
+### Documentation
+
+- [AGENTS.md](./AGENTS.md) -- AI agent onboarding, architecture overview, and conventions
+- Guidelines -- mandatory rules for each subsystem:
+  - [consumer/GUIDELINES.md](./consumer/GUIDELINES.md) -- Kafka consumption, offset management, retry, shutdown
+  - [consumer/transforms/GUIDELINES.md](./consumer/transforms/GUIDELINES.md) -- CDC transforms, service provider onboarding
+  - [internal/client/GUIDELINES.md](./internal/client/GUIDELINES.md) -- gRPC client, TLS/OIDC auth, SDK usage
+  - [internal/config/GUIDELINES.md](./internal/config/GUIDELINES.md) -- Options/Config/CompletedConfig pattern, Clowder, Viper
+  - [metrics/GUIDELINES.md](./metrics/GUIDELINES.md) -- OpenTelemetry metrics, Prometheus, Grafana alignment
+- [docs/dev-guides/](./docs/dev-guides/) -- Development guides (e.g., HBI testing)
+- [docs/runbooks/](./docs/runbooks/) -- Operational runbooks for troubleshooting and incident response
+
 ### To Build:
 `make build`
 
