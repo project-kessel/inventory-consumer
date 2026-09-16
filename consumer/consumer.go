@@ -258,11 +258,11 @@ func (i *InventoryConsumer) Consume() error {
 			case kafka.Error:
 				metricscollector.Incr(i.MetricsCollector.KafkaErrorEvents, "kafka", nil,
 					attribute.String("code", e.Code().String()),
-					attribute.String("error", e.Error()))
+					attribute.Bool("fatal", e.IsFatal()))
 				if e.IsFatal() {
 					run = false
 				} else {
-					i.Logger.Errorf("recoverable consumer error: %v: %v -- will retry", e.Code(), e)
+					i.Logger.Errorf("recoverable consumer error: %v: %s -- will retry", e.Code(), e.Error())
 					continue
 				}
 

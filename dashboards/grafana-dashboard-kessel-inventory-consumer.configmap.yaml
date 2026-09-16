@@ -816,7 +816,7 @@ data:
               "options": {
                 "keepLabels": [
                   "code",
-                  "error"
+                  "fatal"
                 ]
               }
             },
@@ -835,7 +835,7 @@ data:
                   "consumer_kafka_error_events_total": {
                     "aggregations": []
                   },
-                  "error": {
+                  "fatal": {
                     "aggregations": [],
                     "operation": "groupby"
                   }
