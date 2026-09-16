@@ -28,6 +28,7 @@ const (
 	testDeleteMessage            = `{"schema":{"type":"struct","fields":[{"type":"struct","fields":[{"type":"string","optional":true,"field":"resource_type"},{"type":"string","optional":true,"field":"resource_id"},{"type":"struct","fields":[{"type":"string","optional":true,"field":"type"}],"optional":true,"name":"reporter"}],"optional":true,"name":"reference"}],"optional":true,"name":"payload"},"payload":{"reference":{"resource_type":"host","resource_id":"00000000-0000-0000-0000-000000000000","reporter":{"type":"hbi"}}}}`
 	testMigrationMessage         = `{"schema":{"type":"struct","fields":[{"type":"string","optional":true,"field":"id"},{"type":"string","optional":true,"field":"ansible_host"},{"type":"string","optional":true,"field":"insights_id"},{"type":"string","optional":true,"field":"subscription_manager_id"},{"type":"string","optional":true,"field":"satellite_id"},{"type":"string","optional":true,"field":"groups"}],"optional":true,"name":"payload"},"payload":{"id":"00000000-0000-0000-0000-000000000000","ansible_host":"my-ansible-host","insights_id":"00000000-0000-0000-0000-000000000000","subscription_manager_id":"00000000-0000-0000-0000-000000000000","satellite_id":"00000000-0000-0000-0000-000000000000","groups":"[{\"id\":\"00000000-0000-0000-0000-000000000000\"}]"}}`
 	testMigrationKey             = `{"payload":{"id":"00000000-0000-0000-0000-000000000000"}}`
+	testMigrationMessageNoGroups = `{"schema":{"type":"struct","fields":[{"type":"string","optional":true,"field":"id"},{"type":"string","optional":true,"field":"ansible_host"},{"type":"string","optional":true,"field":"insights_id"},{"type":"string","optional":true,"field":"subscription_manager_id"},{"type":"string","optional":true,"field":"satellite_id"},{"type":"string","optional":true,"field":"groups"}],"optional":true,"name":"payload"},"payload":{"id":"00000000-0000-0000-0000-000000000000","ansible_host":"my-ansible-host","insights_id":"00000000-0000-0000-0000-000000000000","subscription_manager_id":"00000000-0000-0000-0000-000000000000","satellite_id":"00000000-0000-0000-0000-000000000000","groups":"[]"}}`
 	defaultApiVersion            = "v1beta2"
 )
 
@@ -460,6 +461,21 @@ func TestInventoryConsumer_ProcessMessage(t *testing.T) {
 				client.On("DeleteResource", mock.Anything).Return(&v1beta2.DeleteResourceResponse{}, nil).Once()
 			},
 			expectError: false,
+		},
+		{
+			name:              "Migration Operation - Malformed message with empty groups is skipped",
+			expectedOperation: OperationTypeMigration,
+			expectedVersion:   defaultApiVersion,
+			msg: &kafka.Message{
+				Key:   []byte(testMigrationKey),
+				Value: []byte(testMigrationMessageNoGroups),
+				TopicPartition: kafka.TopicPartition{
+					Topic: ToPointer("test-topic"),
+				},
+			},
+			clientEnabled: true,
+			setupMock:     func(client *mocks.MockClient) {},
+			expectError:   false,
 		},
 	}
 

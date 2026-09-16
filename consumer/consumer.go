@@ -228,7 +228,7 @@ func (i *InventoryConsumer) Consume() error {
 					continue
 				}
 
-				err = i.ProcessMessage(headers, e)
+				err = i.safeProcessMessage(headers, e)
 				if err != nil {
 					i.Logger.Errorf(
 						"error processing message: topic=%s partition=%d offset=%s",
@@ -289,6 +289,20 @@ func (i *InventoryConsumer) Consume() error {
 	return err
 }
 
+// safeProcessMessage wraps ProcessMessage with panic recovery to prevent
+// malformed messages from crashing the consumer in a crash-loop
+func (i *InventoryConsumer) safeProcessMessage(headers EventHeaders, msg *kafka.Message) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "PanicRecovery", nil)
+			i.Logger.Errorf("recovered from panic processing message: topic=%s partition=%d offset=%s panic=%v",
+				*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset, r)
+			err = nil // skip the message to prevent crash-loop
+		}
+	}()
+	return i.ProcessMessage(headers, msg)
+}
+
 // ProcessMessage processes an event message and replicates the change to Kessel Inventory
 func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Message) error {
 	switch headers.Operation {
@@ -323,8 +337,9 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 				deleteReq, err := transforms.TransformHostToDeleteResourceRequest(msg.Value, msg.Key)
 				if err != nil {
 					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToDeleteResourceRequest", nil)
-					i.Logger.Errorf("failed to parse message for host deletion: %v", err)
-					return err
+					i.Logger.Errorf("skipping malformed migration delete message: %v (topic=%s partition=%d offset=%s)",
+						err, *msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
+					return nil // skip malformed messages to prevent crash-loop
 				}
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
@@ -335,8 +350,9 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 				reportReq, err := transforms.TransformHostToReportResourceRequest(msg.Value)
 				if err != nil {
 					metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "TransformHostToReportResourceRequest", nil)
-					i.Logger.Errorf("failed to parse message for host: %v", err)
-					return err
+					i.Logger.Errorf("skipping malformed migration message: %v (topic=%s partition=%d offset=%s)",
+						err, *msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
+					return nil // skip malformed messages to prevent crash-loop
 				}
 
 				resp, operationErr = i.Retry(func() (interface{}, error) {
