@@ -86,7 +86,6 @@ func New(config CompletedConfig, client kessel.ClientProvider, logger *log.Helpe
 	// Create consumer if not provided
 	if consumer == nil {
 		logger.Info("Setting up kafka consumer")
-		logger.Debugf("completed kafka config: %+v", config.KafkaConfig)
 		kafkaConsumer, err := kafka.NewConsumer(config.KafkaConfig)
 		if err != nil {
 			logger.Errorf("error creating kafka consumer: %v", err)
@@ -253,9 +252,8 @@ func (i *InventoryConsumer) Consume() error {
 				}
 				metricscollector.Incr(i.MetricsCollector.MsgsProcessed, headers.Operation, nil,
 					metricscollector.AddExtraLabel("topic", *e.TopicPartition.Topic))
-				i.Logger.Infof("consumed event from topic %s, partition %d at offset %s",
-					*e.TopicPartition.Topic, e.TopicPartition.Partition, e.TopicPartition.Offset)
-				i.Logger.Debugf("consumed event data: key = %-10s value = %s", string(e.Key), string(e.Value))
+				i.Logger.Infof("consumed event from topic %s, partition %d at offset %s for key %s",
+					*e.TopicPartition.Topic, e.TopicPartition.Partition, e.TopicPartition.Offset, string(e.Key))
 
 			case kafka.Error:
 				metricscollector.Incr(i.MetricsCollector.KafkaErrorEvents, "kafka", nil,
@@ -295,7 +293,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 	// TODO: We need to support migrations for many resource types, this is a temporary solution to support host migrations
 	case OperationTypeMigration:
 		i.Logger.Infof("processing message: operation=%s, version=%s", headers.Operation, headers.Version)
-		i.Logger.Debugf("processed message=%s", msg.Value)
+		i.Logger.Debugf("processed message key=%s", msg.Key)
 
 		if i.Client.IsEnabled() {
 			var resp interface{}
@@ -355,7 +353,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 	case OperationTypeReportResource:
 		i.Logger.Infof("processing message: operation=%s, version=%s", headers.Operation, headers.Version)
-		i.Logger.Debugf("processed message=%s", msg.Value)
+		i.Logger.Debugf("processed message key=%s", msg.Key)
 
 		var req v1beta2.ReportResourceRequest
 		err := ParseCreateOrUpdateMessage(msg.Value, &req)
@@ -381,7 +379,7 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 	case OperationTypeDeleteResource:
 		i.Logger.Infof("processing message: operation=%s, version=%s", headers.Operation, headers.Version)
-		i.Logger.Debugf("processed message=%s", msg.Value)
+		i.Logger.Debugf("processed message key=%s", msg.Key)
 
 		var req v1beta2.DeleteResourceRequest
 		err := ParseDeleteMessage(msg.Value, &req)
@@ -417,8 +415,8 @@ func (i *InventoryConsumer) ProcessMessage(headers EventHeaders, msg *kafka.Mess
 
 	default:
 		metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "unknown-operation-type", nil)
-		i.Logger.Errorf("unknown operation type, message cannot be processed and will be dropped: offset=%s operation=%s version=%s msg=%s",
-			msg.TopicPartition.Offset.String(), headers.Operation, headers.Version, msg.Value)
+		i.Logger.Errorf("unknown operation type, message cannot be processed and will be dropped: offset=%s operation=%s version=%s key=%s",
+			msg.TopicPartition.Offset.String(), headers.Operation, headers.Version, msg.Key)
 	}
 	return nil
 }
