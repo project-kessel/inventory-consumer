@@ -906,3 +906,69 @@ func TestInventoryConsumer_Shutdown(t *testing.T) {
 		})
 	}
 }
+
+func TestSafeProcessMessage(t *testing.T) {
+	topic := "test-topic"
+
+	tests := []struct {
+		name        string
+		operation   string
+		value       []byte
+		expectError bool
+	}{
+		{
+			name:        "recovered panic returns non-nil error",
+			operation:   OperationTypeMigration,
+			value:       nil, // nil Value triggers panic in transforms
+			expectError: true,
+		},
+		{
+			name:        "normal error propagates",
+			operation:   OperationTypeReportResource,
+			value:       []byte(`invalid json`),
+			expectError: true,
+		},
+		{
+			name:        "malformed migration message is skipped",
+			operation:   OperationTypeMigration,
+			value:       []byte(testMigrationMessageNoGroups),
+			expectError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tester := &TestCase{name: test.name}
+			errs := tester.TestSetup()
+			assert.Empty(t, errs)
+
+			mockClient := &mocks.MockClient{}
+			mockClient.On("IsEnabled").Return(true).Maybe()
+			tester.inv.Client = mockClient
+
+			msg := &kafka.Message{
+				TopicPartition: kafka.TopicPartition{
+					Topic:     &topic,
+					Partition: 0,
+					Offset:    kafka.Offset(42),
+				},
+				Value: test.value,
+				Key:   []byte(testMigrationKey),
+			}
+
+			headers := EventHeaders{
+				Operation: test.operation,
+				Version:   defaultApiVersion,
+			}
+
+			err := tester.inv.safeProcessMessage(headers, msg)
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			mockClient.AssertExpectations(t)
+		})
+	}
+}

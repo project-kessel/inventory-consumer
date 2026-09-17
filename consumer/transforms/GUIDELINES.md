@@ -52,7 +52,7 @@ Transforms are the extension point for onboarding new CDC source systems that do
 
 - Use pointer types (`*string`) in domain structs for CDC columns that can be database NULL. JSON `null` deserializes to a nil pointer and flows through to `structpb.Struct` as a null value -- do not convert nil pointers to empty strings.
 - The `groups` field uses the custom `GroupSlice` type because Debezium may emit it as either a JSON array or a stringified JSON array. Any similar polymorphic field in a new provider must use a custom type with `UnmarshalJSON`.
-- **Collection access**: All transform implementations must validate collection length before accessing elements and return an error for empty/nil collections, rather than relying on panic recovery. The consumer's `safeProcessMessage` wrapper provides a safety net for unexpected panics, but transforms should handle known cases explicitly.
+- **Collection access**: All transform implementations must validate collection length before accessing elements and return an error for empty/nil collections, rather than relying on panic recovery. The consumer's `safeProcessMessage` wrapper recovers unexpected panics and returns a non-nil error (triggering the consumer's retry path), but transforms should handle known cases explicitly with descriptive errors returned from `ProcessMessage`.
 
 ## Constants Conventions
 

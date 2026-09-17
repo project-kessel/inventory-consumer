@@ -290,14 +290,17 @@ func (i *InventoryConsumer) Consume() error {
 }
 
 // safeProcessMessage wraps ProcessMessage with panic recovery to prevent
-// malformed messages from crashing the consumer in a crash-loop
+// the consumer process from crashing. Recovered panics return a non-nil
+// error so Consume triggers its existing retry path rather than silently
+// acknowledging and committing the message offset. Intentional
+// malformed-message skips are handled explicitly in ProcessMessage.
 func (i *InventoryConsumer) safeProcessMessage(headers EventHeaders, msg *kafka.Message) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			metricscollector.Incr(i.MetricsCollector.MsgProcessFailures, "PanicRecovery", nil)
 			i.Logger.Errorf("recovered from panic processing message: topic=%s partition=%d offset=%s panic=%v",
 				*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset, r)
-			err = nil // skip the message to prevent crash-loop
+			err = fmt.Errorf("panic recovered during message processing: %v", r)
 		}
 	}()
 	return i.ProcessMessage(headers, msg)
