@@ -1,13 +1,13 @@
 module github.com/project-kessel/inventory-consumer
 
-go 1.26.4
+go 1.26.10
 
 require (
-	github.com/confluentinc/confluent-kafka-go/v2 v2.16.0
+	github.com/confluentinc/confluent-kafka-go/v2 v2.16.1
 	github.com/go-kratos/kratos/v2 v2.9.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/project-kessel/inventory-api v0.0.0-20260909150251-51efd8757fcf
-	github.com/project-kessel/kessel-sdk-go v1.13.0
+	github.com/project-kessel/kessel-sdk-go v1.13.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/redhatinsights/app-common-go v1.7.0
 	github.com/spf13/cobra v1.10.2
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
-	google.golang.org/grpc v1.84.0
+	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -37,12 +37,14 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/pandatix/go-abnf v0.5.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.72.1 // indirect
+	github.com/prometheus/common v0.73.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
@@ -55,13 +57,13 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20261005182115-fad411399dd8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20261026165753-2ffab32bce7e // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261026165753-2ffab32bce7e // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
