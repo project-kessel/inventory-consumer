@@ -44,7 +44,6 @@ objects:
         replicas: 3
       optionalDependencies:
         - kessel-inventory
-        - kessel-relations
       deployments:
         - name: service
           replicas: ${{REPLICAS}}
