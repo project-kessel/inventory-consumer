@@ -4,7 +4,7 @@ go 1.26.10
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.16.1
-	github.com/go-kratos/kratos/v2 v2.9.2
+	github.com/go-kratos/kratos/v3 v3.0.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/project-kessel/inventory-api v0.0.0-20260909150251-51efd8757fcf
 	github.com/project-kessel/kessel-sdk-go v1.13.1
